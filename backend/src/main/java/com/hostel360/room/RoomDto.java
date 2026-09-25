@@ -13,7 +13,8 @@ public final class RoomDto {
             @NotNull @Min(1) @Max(2) Integer floor,
             @NotNull @Min(1) @Max(2) Integer capacity,
             @NotNull Boolean longTerm,
-            @NotNull RoomStatus status) {
+            @NotNull RoomStatus status,
+            @Size(max = 150) String bookingType) {
 
         void applyTo(Room r) {
             r.setNumber(number);
@@ -22,6 +23,7 @@ public final class RoomDto {
             r.setCapacity(capacity);
             r.setLongTerm(longTerm);
             r.setStatus(status);
+            r.setBookingType(bookingType == null || bookingType.isBlank() ? null : bookingType.trim());
         }
     }
 
@@ -29,9 +31,11 @@ public final class RoomDto {
     public record StatusRequest(@NotNull RoomStatus status) {}
 
     @Schema(name = "Room")
-    public record Response(Long id, int number, String name, int floor, int capacity, boolean longTerm, RoomStatus status) {
+    public record Response(Long id, int number, String name, int floor, int capacity, boolean longTerm, RoomStatus status,
+                           @Schema(nullable = true) String bookingType) {
         static Response from(Room r) {
-            return new Response(r.getId(), r.getNumber(), r.getName(), r.getFloor(), r.getCapacity(), r.isLongTerm(), r.getStatus());
+            return new Response(r.getId(), r.getNumber(), r.getName(), r.getFloor(), r.getCapacity(), r.isLongTerm(), r.getStatus(),
+                    r.getBookingType());
         }
     }
 }

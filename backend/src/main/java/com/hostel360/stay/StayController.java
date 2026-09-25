@@ -1,14 +1,18 @@
 package com.hostel360.stay;
 
+import com.hostel360.common.BusinessException;
 import com.hostel360.stay.StayDto.Request;
 import com.hostel360.stay.StayDto.Response;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -18,6 +22,7 @@ import java.util.List;
 public class StayController {
     private final StayService service;
     private final StayRepository repo;
+    private final BookingImportService bookingImport;
 
     /** Stays overlapping [from, to); all stays when no range is given. */
     @GetMapping
@@ -65,6 +70,15 @@ public class StayController {
     @Transactional
     public Response cancelStay(@PathVariable Long id) {
         return Response.from(service.cancel(id));
+    }
+
+    /** Imports a reservations export from the Booking.com extranet (.xls or .xlsx). */
+    @PostMapping(value = "/import-booking", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BookingImportService.Result importBooking(@RequestPart("file") MultipartFile file) throws IOException {
+        if (file.isEmpty()) throw new BusinessException("Choose the export file to import.");
+        try (var in = file.getInputStream()) {
+            return bookingImport.importExport(in);
+        }
     }
 
     @DeleteMapping("/{id}")

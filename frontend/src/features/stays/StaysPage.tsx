@@ -1,8 +1,9 @@
-import { Button, Stack, Tabs, Text, TextInput } from '@mantine/core'
-import { IconPlus, IconSearch } from '@tabler/icons-react'
+import { Button, Group, Stack, Tabs, Text, TextInput } from '@mantine/core'
+import { IconFileImport, IconPlus, IconSearch } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useListStays, type Stay } from '@/api/generated'
 import { PageHeader } from '@/shared/PageHeader'
+import { BookingImportModal } from './BookingImportModal'
 import { groupStays } from './groupStays'
 import { StayCard } from './StayCard'
 import { StayDrawer, type StayTarget } from './StayDrawer'
@@ -12,6 +13,7 @@ export function StaysPage() {
   const { data: stays = [], isLoading } = useListStays()
   const [target, setTarget] = useState<StayTarget>(null)
   const [search, setSearch] = useState('')
+  const [importing, setImporting] = useState(false)
   const actions = useStayActions(() => setTarget(null))
   const g = groupStays(stays)
   const history = g.history.filter((s) => `${s.guest.name} ${s.room.number} ${s.room.name}`.toLowerCase().includes(search.toLowerCase()))
@@ -34,7 +36,12 @@ export function StaysPage() {
       <PageHeader
         title="Stays"
         description="Bookings, check-ins and check-outs"
-        action={<Button leftSection={<IconPlus size={16} />} onClick={() => setTarget({ defaults: {} })}>New stay</Button>}
+        action={
+          <Group gap="xs">
+            <Button variant="default" leftSection={<IconFileImport size={16} />} onClick={() => setImporting(true)}>Import from Booking.com</Button>
+            <Button leftSection={<IconPlus size={16} />} onClick={() => setTarget({ defaults: {} })}>New stay</Button>
+          </Group>
+        }
       />
       <Tabs defaultValue="today" keepMounted={false}>
         <Tabs.List mb="md">
@@ -57,6 +64,7 @@ export function StaysPage() {
         </Tabs.Panel>
       </Tabs>
       <StayDrawer target={target} actions={actions} onClose={() => setTarget(null)} />
+      <BookingImportModal opened={importing} onClose={() => setImporting(false)} />
     </>
   )
 }

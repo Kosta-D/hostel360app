@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface RoomRepository extends JpaRepository<Room, Long> {
     List<Room> findAllByOrderByNumberAsc();
+
+    List<Room> findByBookingTypeIgnoreCaseOrderByNumberAsc(String bookingType);
 }

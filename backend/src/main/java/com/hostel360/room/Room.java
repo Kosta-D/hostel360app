@@ -17,4 +17,6 @@ public class Room extends BaseEntity {
     private boolean longTerm;
     @Enumerated(EnumType.STRING)
     private RoomStatus status = RoomStatus.AVAILABLE;
+    /** Booking.com room type this room is sold as; used by the reservations import. */
+    private String bookingType;
 }

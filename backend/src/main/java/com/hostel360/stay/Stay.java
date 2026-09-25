@@ -44,4 +44,6 @@ public class Stay extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private StayStatus status = StayStatus.BOOKED;
     private String note;
+    /** Booking.com reservation number for imported stays. */
+    private String bookingRef;
 }

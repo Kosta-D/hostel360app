@@ -177,4 +177,85 @@ class ApiTest {
         mvc.perform(authed(post("/api/stays")).content(stay(room, "Later Guest", 1, false, "2035-05-01", "2035-05-03", "EUR", 60)))
                 .andExpect(status().isCreated());
     }
+
+    static final String DOUBLE = "Double or Twin Room with Shared Bathroom", SINGLE = "Single Room with Shared Bathroom";
+
+    /** A Booking.com extranet export with its Serbian headers (only the columns the import reads, in a different order). */
+    static byte[] bookingExport(Object[]... rows) throws Exception {
+        try (var wb = new org.apache.poi.hssf.usermodel.HSSFWorkbook(); var out = new java.io.ByteArrayOutputStream()) {
+            var sheet = wb.createSheet("Sheet1");
+            String[] header = {"Broj rezervacije", "Ime gosta", "Prijavljivanje", "Odjavljivanje ", "Status", "Osobe ", "Cena", "Booker country", "Vrsta jedinice"};
+            var h = sheet.createRow(0);
+            for (int i = 0; i < header.length; i++) h.createCell(i).setCellValue(header[i]);
+            for (int r = 0; r < rows.length; r++) {
+                var row = sheet.createRow(r + 1);
+                for (int i = 0; i < rows[r].length; i++) {
+                    if (rows[r][i] instanceof Number n) row.createCell(i).setCellValue(n.doubleValue());
+                    else row.createCell(i).setCellValue(String.valueOf(rows[r][i]));
+                }
+            }
+            wb.write(out);
+            return out.toByteArray();
+        }
+    }
+
+    String importBooking(byte[] file) throws Exception {
+        return mvc.perform(multipart("/api/stays/import-booking").file(new org.springframework.mock.web.MockMultipartFile("file", "export.xls", "application/vnd.ms-excel", file))
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+    }
+
+    @Test
+    void importsBookingExport() throws Exception {
+        var file = bookingExport(
+                new Object[]{1001d, "Ana Past", "2020-06-03", "2020-06-05", "ok", 1d, "53.56 EUR", "ge", SINGLE},
+                new Object[]{1002d, "Nina Cancel", "2028-06-04", "2028-06-06", "cancelled_by_guest", 2d, "71.52 EUR", "de", DOUBLE},
+                new Object[]{1003d, "Ivo NoShow", "2028-06-04", "2028-06-06", "no_show", 2d, "71.52 EUR", "de", DOUBLE},
+                new Object[]{1004d, "Double One", "2028-06-10", "2028-06-12", "ok", 2d, "70 EUR", "fr", DOUBLE},
+                new Object[]{1005d, "Double Two", "2028-06-10", "2028-06-12", "ok", 2d, "70 EUR", "fr", DOUBLE},
+                new Object[]{1006d, "Early Leaver", "2028-07-01", "2028-07-08", "ok", 1d, "300 EUR", "tr", SINGLE},
+                new Object[]{1007d, "Next Guest", "2028-07-05", "2028-07-07", "ok", 1d, "80 EUR", "mk", SINGLE},
+                new Object[]{1008d, "Two Rooms", "2028-08-01", "2028-08-03", "ok", 3d, "100.01 EUR", "", SINGLE + ", " + DOUBLE});
+
+        var result = json.readTree(importBooking(file));
+        org.assertj.core.api.Assertions.assertThat(result.get("imported").asInt()).isEqualTo(7);
+        org.assertj.core.api.Assertions.assertThat(result.get("notImported").asInt()).isEqualTo(2);
+        org.assertj.core.api.Assertions.assertThat(result.get("shortened").toString()).contains("Early Leaver", "Next Guest");
+        org.assertj.core.api.Assertions.assertThat(result.get("problems")).isEmpty();
+
+        mvc.perform(authed(get("/api/stays?from=2020-06-01&to=2020-07-01")))
+                .andExpect(jsonPath("$[0].guest.name").value("Ana Past"))
+                .andExpect(jsonPath("$[0].guest.country").value("Georgia"))
+                .andExpect(jsonPath("$[0].room.number").value(20))
+                .andExpect(jsonPath("$[0].status").value("CHECKED_OUT"))
+                .andExpect(jsonPath("$[0].paymentStatus").value("PAID"));
+        mvc.perform(authed(get("/api/stays?from=2028-06-10&to=2028-06-11")))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].room.number").value(13))
+                .andExpect(jsonPath("$[1].room.number").value(21))
+                .andExpect(jsonPath("$[0].status").value("BOOKED"));
+        mvc.perform(authed(get("/api/stays?from=2028-07-01&to=2028-07-02")))
+                .andExpect(jsonPath("$[0].checkOut").value("2028-07-05"))
+                .andExpect(jsonPath("$[0].amount").value(300.0));
+        mvc.perform(authed(get("/api/stays?from=2028-08-01&to=2028-08-02")))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].room.number").value(13))
+                .andExpect(jsonPath("$[0].people").value(2))
+                .andExpect(jsonPath("$[0].amount").value(50.01))
+                .andExpect(jsonPath("$[1].room.number").value(20))
+                .andExpect(jsonPath("$[1].people").value(1))
+                .andExpect(jsonPath("$[1].amount").value(50.0));
+
+        var again = json.readTree(importBooking(file));
+        org.assertj.core.api.Assertions.assertThat(again.get("imported").asInt()).isZero();
+        org.assertj.core.api.Assertions.assertThat(again.get("alreadyInApp").asInt()).isEqualTo(7);
+    }
+
+    @Test
+    void rejectsFilesThatAreNotBookingExports() throws Exception {
+        mvc.perform(multipart("/api/stays/import-booking").file(new org.springframework.mock.web.MockMultipartFile("file", "x.txt", "text/plain", "hello".getBytes()))
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isConflict());
+    }
 }
