@@ -1,3 +1,59 @@
 # Hostel360
 
-Mini ERP for a small hostel: rooms, guests and stays, finance, utilities, maintenance.
+A mini ERP for a small hostel. It covers rooms, guests and stays, finance, utilities, and maintenance.
+
+| Part | Stack |
+|------|-------|
+| Backend | Java 21, Spring Boot 3, Spring Data JPA, Flyway, Spring Security (JWT) |
+| Database | PostgreSQL 16 |
+| Frontend | React 19, TypeScript, Vite, Mantine, TanStack Query |
+| API client | Generated from the backend's OpenAPI spec with orval |
+
+## Run everything with Docker
+
+```bash
+cp .env.example .env   # then change the passwords
+docker compose up --build
+```
+
+Once it starts, open http://localhost:8081 and sign in with the credentials from `.env` (by default `admin` / `admin`).
+
+## Develop locally
+
+```bash
+docker compose up -d db                  # database only
+cd backend && mvn spring-boot:run        # API on :8080, docs at /swagger-ui.html
+cd frontend && npm install && npm run dev  # UI on :5173, proxies /api to :8080
+```
+
+Tests use Testcontainers, so Docker has to be running: `cd backend && mvn verify`.
+
+## Project layout
+
+```
+backend/src/main/java/com/hostel360/
+  common/     shared base entity, errors, currency
+  config/     security and OpenAPI
+  auth/       login and JWT
+  settings/   hostel name and EUR → RSD rate
+  room/       rooms module (controller, dto, entity, repository)
+backend/src/main/resources/db/migration/   Flyway SQL migrations
+
+frontend/src/
+  api/        http.ts (axios + auth) and generated.ts (do not edit)
+  app/        layout, router, theme, navigation
+  shared/     reusable UI and helpers
+  features/   one folder per module
+```
+
+## Adding a module
+
+1. Backend: create a new package with the entity, a DTO with `Request` and `Response` records, the repository and the controller, plus a Flyway migration `V<n>__<name>.sql`.
+2. Regenerate the client while the backend is running: `cd frontend && npm run api:spec && npm run api`.
+3. Frontend: add `features/<module>/`, register the route in `app/router.tsx`, and set `ready: true` in `app/nav.ts`.
+
+## Conventions
+
+- Amounts are stored in EUR, the base currency. Records entered in RSD also store the exchange rate that applied when they were saved.
+- A room's status only tracks housekeeping (available, cleaning, out of order). Whether a room is occupied comes from stays.
+- Every API error is returned as `application/problem+json`.
