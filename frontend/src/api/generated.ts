@@ -24,6 +24,148 @@ import type {
 } from '@tanstack/react-query';
 
 import { http } from './http';
+export type StayRequestSource = typeof StayRequestSource[keyof typeof StayRequestSource];
+
+
+export const StayRequestSource = {
+  BOOKING: 'BOOKING',
+  DIRECT: 'DIRECT',
+} as const;
+
+export type StayRequestCurrency = typeof StayRequestCurrency[keyof typeof StayRequestCurrency];
+
+
+export const StayRequestCurrency = {
+  EUR: 'EUR',
+  RSD: 'RSD',
+} as const;
+
+export type StayRequestPaymentStatus = typeof StayRequestPaymentStatus[keyof typeof StayRequestPaymentStatus];
+
+
+export const StayRequestPaymentStatus = {
+  NOT_PAID: 'NOT_PAID',
+  PARTLY_PAID: 'PARTLY_PAID',
+  PAID: 'PAID',
+} as const;
+
+/**
+ * Pass guestId for an existing guest, or guestName (and guestCountry) to create one.
+ */
+export interface StayRequest {
+  roomId: number;
+  guestId?: number;
+  /**
+     * @minLength 0
+     * @maxLength 100
+     */
+  guestName?: string;
+  /**
+     * @minLength 0
+     * @maxLength 60
+     */
+  guestCountry?: string;
+  /**
+     * @minimum 1
+     * @maximum 2
+     */
+  people: number;
+  longTerm: boolean;
+  source?: StayRequestSource;
+  checkIn: string;
+  checkOut?: string;
+  /** @minimum 0 */
+  amount: number;
+  currency: StayRequestCurrency;
+  paymentStatus: StayRequestPaymentStatus;
+  /**
+     * @minLength 0
+     * @maxLength 500
+     */
+  note?: string;
+}
+
+/**
+ * @nullable
+ */
+export type StaySource = typeof StaySource[keyof typeof StaySource] | null;
+
+
+export const StaySource = {
+  BOOKING: 'BOOKING',
+  DIRECT: 'DIRECT',
+} as const;
+
+export type StayCurrency = typeof StayCurrency[keyof typeof StayCurrency];
+
+
+export const StayCurrency = {
+  EUR: 'EUR',
+  RSD: 'RSD',
+} as const;
+
+export type StayPaymentStatus = typeof StayPaymentStatus[keyof typeof StayPaymentStatus];
+
+
+export const StayPaymentStatus = {
+  NOT_PAID: 'NOT_PAID',
+  PARTLY_PAID: 'PARTLY_PAID',
+  PAID: 'PAID',
+} as const;
+
+export type StayStatus = typeof StayStatus[keyof typeof StayStatus];
+
+
+export const StayStatus = {
+  BOOKED: 'BOOKED',
+  CHECKED_IN: 'CHECKED_IN',
+  CHECKED_OUT: 'CHECKED_OUT',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface StayRoom {
+  id: number;
+  number: number;
+  name: string;
+}
+
+export interface StayGuest {
+  id: number;
+  name: string;
+  /** @nullable */
+  country?: string | null;
+}
+
+export interface Stay {
+  id: number;
+  room: StayRoom;
+  guest: StayGuest;
+  people: number;
+  longTerm: boolean;
+  /** @nullable */
+  source?: StaySource;
+  checkIn: string;
+  /**
+     * Exclusive end date; empty for an open-ended long-term stay
+     * @nullable
+     */
+  checkOut?: string | null;
+  /**
+     * Short stays only
+     * @nullable
+     */
+  nights?: number | null;
+  amount: number;
+  currency: StayCurrency;
+  eurToRsd: number;
+  /** Amount converted to EUR with the saved rate */
+  amountEur: number;
+  paymentStatus: StayPaymentStatus;
+  status: StayStatus;
+  /** @nullable */
+  note?: string | null;
+}
+
 export interface Settings {
   /** @minLength 1 */
   hostelName: string;
@@ -84,6 +226,33 @@ export interface Room {
   status: RoomStatus;
 }
 
+export interface GuestRequest {
+  /**
+     * @minLength 0
+     * @maxLength 100
+     */
+  name: string;
+  /**
+     * @minLength 0
+     * @maxLength 60
+     */
+  country?: string;
+  /**
+     * @minLength 0
+     * @maxLength 500
+     */
+  note?: string;
+}
+
+export interface Guest {
+  id: number;
+  name: string;
+  /** @nullable */
+  country?: string | null;
+  /** @nullable */
+  note?: string | null;
+}
+
 export interface LoginRequest {
   /** @minLength 1 */
   username: string;
@@ -109,6 +278,16 @@ export interface RoomStatusRequest {
   status: RoomStatusRequestStatus;
 }
 
+export type ListStaysParams = {
+from?: string;
+to?: string;
+guestId?: number;
+};
+
+export type ListGuestsParams = {
+q?: string;
+};
+
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
@@ -127,6 +306,216 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getStay = (
+    id: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Stay>(
+      {url: `/api/stays/${id}`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getGetStayQueryKey = (id: number,) => {
+    return [
+    `/api/stays/${id}`
+    ] as const;
+    }
+
+
+export const getGetStayQueryOptions = <TData = Awaited<ReturnType<typeof getStay>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStay>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStayQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStay>>> = ({ signal }) => getStay(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStay>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetStayQueryResult = NonNullable<Awaited<ReturnType<typeof getStay>>>
+export type GetStayQueryError = unknown
+
+
+export function useGetStay<TData = Awaited<ReturnType<typeof getStay>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStay>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStay>>,
+          TError,
+          Awaited<ReturnType<typeof getStay>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStay<TData = Awaited<ReturnType<typeof getStay>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStay>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStay>>,
+          TError,
+          Awaited<ReturnType<typeof getStay>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStay<TData = Awaited<ReturnType<typeof getStay>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStay>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetStay<TData = Awaited<ReturnType<typeof getStay>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStay>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetStayQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const updateStay = (
+    id: number,
+    stayRequest: StayRequest,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Stay>(
+      {url: `/api/stays/${id}`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: stayRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getUpdateStayMutationKey = () => ['updateStay'] as const;
+
+export const getUpdateStayMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStay>>, TError,UpdateStayMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStay>>, TError,UpdateStayMutationVariables, TContext> => {
+
+const mutationKey = getUpdateStayMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStay>>, UpdateStayMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateStay(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStayMutationResult = NonNullable<Awaited<ReturnType<typeof updateStay>>>
+    export type UpdateStayMutationBody = StayRequest
+    export type UpdateStayMutationError = unknown
+    export type UpdateStayMutationVariables = {id: number;data: StayRequest}
+
+    export const useUpdateStay = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStay>>, TError,UpdateStayMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateStay>>,
+        TError,
+        UpdateStayMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateStayMutationOptions(options), queryClient);
+    }
+
+export const deleteStay = (
+    id: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<void>(
+      {url: `/api/stays/${id}`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeleteStayMutationKey = () => ['deleteStay'] as const;
+
+export const getDeleteStayMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStay>>, TError,DeleteStayMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStay>>, TError,DeleteStayMutationVariables, TContext> => {
+
+const mutationKey = getDeleteStayMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStay>>, DeleteStayMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteStay(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStayMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStay>>>
+
+    export type DeleteStayMutationError = unknown
+    export type DeleteStayMutationVariables = {id: number}
+
+    export const useDeleteStay = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStay>>, TError,DeleteStayMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStay>>,
+        TError,
+        DeleteStayMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteStayMutationOptions(options), queryClient);
+    }
 
 export const getSettings = (
 
@@ -487,6 +876,546 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getDeleteRoomMutationOptions(options), queryClient);
     }
 
+export const getGuest = (
+    id: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Guest>(
+      {url: `/api/guests/${id}`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getGetGuestQueryKey = (id: number,) => {
+    return [
+    `/api/guests/${id}`
+    ] as const;
+    }
+
+
+export const getGetGuestQueryOptions = <TData = Awaited<ReturnType<typeof getGuest>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGuest>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGuestQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGuest>>> = ({ signal }) => getGuest(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGuest>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetGuestQueryResult = NonNullable<Awaited<ReturnType<typeof getGuest>>>
+export type GetGuestQueryError = unknown
+
+
+export function useGetGuest<TData = Awaited<ReturnType<typeof getGuest>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGuest>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGuest>>,
+          TError,
+          Awaited<ReturnType<typeof getGuest>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetGuest<TData = Awaited<ReturnType<typeof getGuest>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGuest>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGuest>>,
+          TError,
+          Awaited<ReturnType<typeof getGuest>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetGuest<TData = Awaited<ReturnType<typeof getGuest>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGuest>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetGuest<TData = Awaited<ReturnType<typeof getGuest>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGuest>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetGuestQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const updateGuest = (
+    id: number,
+    guestRequest: GuestRequest,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Guest>(
+      {url: `/api/guests/${id}`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: guestRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getUpdateGuestMutationKey = () => ['updateGuest'] as const;
+
+export const getUpdateGuestMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateGuest>>, TError,UpdateGuestMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateGuest>>, TError,UpdateGuestMutationVariables, TContext> => {
+
+const mutationKey = getUpdateGuestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateGuest>>, UpdateGuestMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateGuest(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateGuestMutationResult = NonNullable<Awaited<ReturnType<typeof updateGuest>>>
+    export type UpdateGuestMutationBody = GuestRequest
+    export type UpdateGuestMutationError = unknown
+    export type UpdateGuestMutationVariables = {id: number;data: GuestRequest}
+
+    export const useUpdateGuest = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateGuest>>, TError,UpdateGuestMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateGuest>>,
+        TError,
+        UpdateGuestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateGuestMutationOptions(options), queryClient);
+    }
+
+export const deleteGuest = (
+    id: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<void>(
+      {url: `/api/guests/${id}`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeleteGuestMutationKey = () => ['deleteGuest'] as const;
+
+export const getDeleteGuestMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteGuest>>, TError,DeleteGuestMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteGuest>>, TError,DeleteGuestMutationVariables, TContext> => {
+
+const mutationKey = getDeleteGuestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteGuest>>, DeleteGuestMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteGuest(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteGuestMutationResult = NonNullable<Awaited<ReturnType<typeof deleteGuest>>>
+
+    export type DeleteGuestMutationError = unknown
+    export type DeleteGuestMutationVariables = {id: number}
+
+    export const useDeleteGuest = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteGuest>>, TError,DeleteGuestMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteGuest>>,
+        TError,
+        DeleteGuestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteGuestMutationOptions(options), queryClient);
+    }
+
+export const listStays = (
+    params?: ListStaysParams,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Stay[]>(
+      {url: `/api/stays`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListStaysQueryKey = (params?: ListStaysParams,) => {
+    return [
+    `/api/stays`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListStaysQueryOptions = <TData = Awaited<ReturnType<typeof listStays>>, TError = unknown>(params?: ListStaysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStays>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStaysQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStays>>> = ({ signal }) => listStays(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStays>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListStaysQueryResult = NonNullable<Awaited<ReturnType<typeof listStays>>>
+export type ListStaysQueryError = unknown
+
+
+export function useListStays<TData = Awaited<ReturnType<typeof listStays>>, TError = unknown>(
+ params: undefined |  ListStaysParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStays>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listStays>>,
+          TError,
+          Awaited<ReturnType<typeof listStays>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListStays<TData = Awaited<ReturnType<typeof listStays>>, TError = unknown>(
+ params?: ListStaysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStays>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listStays>>,
+          TError,
+          Awaited<ReturnType<typeof listStays>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListStays<TData = Awaited<ReturnType<typeof listStays>>, TError = unknown>(
+ params?: ListStaysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStays>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListStays<TData = Awaited<ReturnType<typeof listStays>>, TError = unknown>(
+ params?: ListStaysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStays>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListStaysQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const createStay = (
+    stayRequest: StayRequest,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Stay>(
+      {url: `/api/stays`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: stayRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateStayMutationKey = () => ['createStay'] as const;
+
+export const getCreateStayMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStay>>, TError,CreateStayMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStay>>, TError,CreateStayMutationVariables, TContext> => {
+
+const mutationKey = getCreateStayMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStay>>, CreateStayMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStay(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStayMutationResult = NonNullable<Awaited<ReturnType<typeof createStay>>>
+    export type CreateStayMutationBody = StayRequest
+    export type CreateStayMutationError = unknown
+    export type CreateStayMutationVariables = {data: StayRequest}
+
+    export const useCreateStay = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStay>>, TError,CreateStayMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createStay>>,
+        TError,
+        CreateStayMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateStayMutationOptions(options), queryClient);
+    }
+
+export const checkOut = (
+    id: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Stay>(
+      {url: `/api/stays/${id}/check-out`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getCheckOutMutationKey = () => ['checkOut'] as const;
+
+export const getCheckOutMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkOut>>, TError,CheckOutMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkOut>>, TError,CheckOutMutationVariables, TContext> => {
+
+const mutationKey = getCheckOutMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkOut>>, CheckOutMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  checkOut(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckOutMutationResult = NonNullable<Awaited<ReturnType<typeof checkOut>>>
+
+    export type CheckOutMutationError = unknown
+    export type CheckOutMutationVariables = {id: number}
+
+    export const useCheckOut = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkOut>>, TError,CheckOutMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof checkOut>>,
+        TError,
+        CheckOutMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCheckOutMutationOptions(options), queryClient);
+    }
+
+export const checkIn = (
+    id: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Stay>(
+      {url: `/api/stays/${id}/check-in`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getCheckInMutationKey = () => ['checkIn'] as const;
+
+export const getCheckInMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkIn>>, TError,CheckInMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkIn>>, TError,CheckInMutationVariables, TContext> => {
+
+const mutationKey = getCheckInMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkIn>>, CheckInMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  checkIn(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckInMutationResult = NonNullable<Awaited<ReturnType<typeof checkIn>>>
+
+    export type CheckInMutationError = unknown
+    export type CheckInMutationVariables = {id: number}
+
+    export const useCheckIn = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkIn>>, TError,CheckInMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof checkIn>>,
+        TError,
+        CheckInMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCheckInMutationOptions(options), queryClient);
+    }
+
+export const cancelStay = (
+    id: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Stay>(
+      {url: `/api/stays/${id}/cancel`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getCancelStayMutationKey = () => ['cancelStay'] as const;
+
+export const getCancelStayMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelStay>>, TError,CancelStayMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelStay>>, TError,CancelStayMutationVariables, TContext> => {
+
+const mutationKey = getCancelStayMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelStay>>, CancelStayMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  cancelStay(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelStayMutationResult = NonNullable<Awaited<ReturnType<typeof cancelStay>>>
+
+    export type CancelStayMutationError = unknown
+    export type CancelStayMutationVariables = {id: number}
+
+    export const useCancelStay = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelStay>>, TError,CancelStayMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof cancelStay>>,
+        TError,
+        CancelStayMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCancelStayMutationOptions(options), queryClient);
+    }
+
 export const listRooms = (
 
  options?: SecondParameter<typeof http>,signal?: AbortSignal
@@ -634,6 +1563,156 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateRoomMutationOptions(options), queryClient);
+    }
+
+export const listGuests = (
+    params?: ListGuestsParams,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Guest[]>(
+      {url: `/api/guests`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListGuestsQueryKey = (params?: ListGuestsParams,) => {
+    return [
+    `/api/guests`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListGuestsQueryOptions = <TData = Awaited<ReturnType<typeof listGuests>>, TError = unknown>(params?: ListGuestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listGuests>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGuestsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGuests>>> = ({ signal }) => listGuests(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGuests>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListGuestsQueryResult = NonNullable<Awaited<ReturnType<typeof listGuests>>>
+export type ListGuestsQueryError = unknown
+
+
+export function useListGuests<TData = Awaited<ReturnType<typeof listGuests>>, TError = unknown>(
+ params: undefined |  ListGuestsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listGuests>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listGuests>>,
+          TError,
+          Awaited<ReturnType<typeof listGuests>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGuests<TData = Awaited<ReturnType<typeof listGuests>>, TError = unknown>(
+ params?: ListGuestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listGuests>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listGuests>>,
+          TError,
+          Awaited<ReturnType<typeof listGuests>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListGuests<TData = Awaited<ReturnType<typeof listGuests>>, TError = unknown>(
+ params?: ListGuestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listGuests>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListGuests<TData = Awaited<ReturnType<typeof listGuests>>, TError = unknown>(
+ params?: ListGuestsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listGuests>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListGuestsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const createGuest = (
+    guestRequest: GuestRequest,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Guest>(
+      {url: `/api/guests`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: guestRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateGuestMutationKey = () => ['createGuest'] as const;
+
+export const getCreateGuestMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGuest>>, TError,CreateGuestMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof createGuest>>, TError,CreateGuestMutationVariables, TContext> => {
+
+const mutationKey = getCreateGuestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createGuest>>, CreateGuestMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createGuest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateGuestMutationResult = NonNullable<Awaited<ReturnType<typeof createGuest>>>
+    export type CreateGuestMutationBody = GuestRequest
+    export type CreateGuestMutationError = unknown
+    export type CreateGuestMutationVariables = {data: GuestRequest}
+
+    export const useCreateGuest = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGuest>>, TError,CreateGuestMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createGuest>>,
+        TError,
+        CreateGuestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateGuestMutationOptions(options), queryClient);
     }
 
 export const login = (

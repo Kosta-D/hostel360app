@@ -10,6 +10,98 @@
     }
   ],
   "paths": {
+    "/api/stays/{id}": {
+      "get": {
+        "tags": [
+          "stay-controller"
+        ],
+        "operationId": "getStay",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stay"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "stay-controller"
+        ],
+        "operationId": "updateStay",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stay"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "stay-controller"
+        ],
+        "operationId": "deleteStay",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/settings": {
       "get": {
         "tags": [
@@ -150,6 +242,271 @@
         }
       }
     },
+    "/api/guests/{id}": {
+      "get": {
+        "tags": [
+          "guest-controller"
+        ],
+        "operationId": "getGuest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Guest"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "guest-controller"
+        ],
+        "operationId": "updateGuest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Guest"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "guest-controller"
+        ],
+        "operationId": "deleteGuest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/stays": {
+      "get": {
+        "tags": [
+          "stay-controller"
+        ],
+        "operationId": "listStays",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "guestId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Stay"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "stay-controller"
+        ],
+        "operationId": "createStay",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stay"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stays/{id}/check-out": {
+      "post": {
+        "tags": [
+          "stay-controller"
+        ],
+        "operationId": "checkOut",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stay"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stays/{id}/check-in": {
+      "post": {
+        "tags": [
+          "stay-controller"
+        ],
+        "operationId": "checkIn",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stay"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stays/{id}/cancel": {
+      "post": {
+        "tags": [
+          "stay-controller"
+        ],
+        "operationId": "cancelStay",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stay"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/rooms": {
       "get": {
         "tags": [
@@ -194,6 +551,67 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/Room"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/guests": {
+      "get": {
+        "tags": [
+          "guest-controller"
+        ],
+        "operationId": "listGuests",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Guest"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "guest-controller"
+        ],
+        "operationId": "createGuest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Guest"
                 }
               }
             }
@@ -275,6 +693,236 @@
   },
   "components": {
     "schemas": {
+      "StayRequest": {
+        "type": "object",
+        "description": "Pass guestId for an existing guest, or guestName (and guestCountry) to create one.",
+        "properties": {
+          "roomId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "guestId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "guestName": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "guestCountry": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 0
+          },
+          "people": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 2,
+            "minimum": 1
+          },
+          "longTerm": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "BOOKING",
+              "DIRECT"
+            ]
+          },
+          "checkIn": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkOut": {
+            "type": "string",
+            "format": "date"
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "EUR",
+              "RSD"
+            ]
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "NOT_PAID",
+              "PARTLY_PAID",
+              "PAID"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "amount",
+          "checkIn",
+          "currency",
+          "longTerm",
+          "paymentStatus",
+          "people",
+          "roomId"
+        ]
+      },
+      "Stay": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "room": {
+            "$ref": "#/components/schemas/StayRoom"
+          },
+          "guest": {
+            "$ref": "#/components/schemas/StayGuest"
+          },
+          "people": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "longTerm": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "BOOKING",
+              "DIRECT"
+            ]
+          },
+          "checkIn": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkOut": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Exclusive end date; empty for an open-ended long-term stay"
+          },
+          "nights": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Short stays only"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "EUR",
+              "RSD"
+            ]
+          },
+          "eurToRsd": {
+            "type": "number"
+          },
+          "amountEur": {
+            "type": "number",
+            "description": "Amount converted to EUR with the saved rate"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "NOT_PAID",
+              "PARTLY_PAID",
+              "PAID"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "BOOKED",
+              "CHECKED_IN",
+              "CHECKED_OUT",
+              "CANCELLED"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "amount",
+          "amountEur",
+          "checkIn",
+          "currency",
+          "eurToRsd",
+          "guest",
+          "id",
+          "longTerm",
+          "paymentStatus",
+          "people",
+          "room",
+          "status"
+        ]
+      },
+      "StayGuest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "country": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "StayRoom": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "number"
+        ]
+      },
       "Settings": {
         "type": "object",
         "properties": {
@@ -381,6 +1029,57 @@
           "name",
           "number",
           "status"
+        ]
+      },
+      "GuestRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 0
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "Guest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "country": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name"
         ]
       },
       "LoginRequest": {

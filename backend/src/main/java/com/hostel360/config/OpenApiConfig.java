@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.ArrayList;
 
-/** Marks every response field as required so the generated TypeScript types are non-optional. */
+/** Marks every non-nullable response field as required so the generated TypeScript types are non-optional. */
 @Configuration
 public class OpenApiConfig {
 
@@ -15,7 +15,12 @@ public class OpenApiConfig {
     OpenApiCustomizer requiredResponseFields() {
         return api -> api.getComponents().getSchemas().forEach((name, schema) -> {
             if (!name.endsWith("Request") && schema.getProperties() != null) {
-                schema.setRequired(new ArrayList<>(((Schema<?>) schema).getProperties().keySet()));
+                var required = new ArrayList<String>();
+                ((Schema<?>) schema).getProperties().forEach((prop, s) -> {
+                    boolean nullable = Boolean.TRUE.equals(s.getNullable()) || (s.getTypes() != null && s.getTypes().contains("null"));
+                    if (!nullable) required.add(prop);
+                });
+                schema.setRequired(required);
             }
         });
     }
