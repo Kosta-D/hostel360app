@@ -55,5 +55,5 @@ frontend/src/
 ## Conventions
 
 - Amounts are stored in EUR, the base currency. Records entered in RSD also store the exchange rate that applied when they were saved.
-- A room's status only tracks housekeeping (available, cleaning, out of order). Whether a room is occupied comes from stays.
+- Rooms have a number, name, floor (1 or 2), capacity (1 or 2), a long-term flag, and a status: available, needs cleaning, or taken. The status is set by hand for now; the Stays module will update it on check-in and check-out.
 - Every API error is returned as `application/problem+json`.

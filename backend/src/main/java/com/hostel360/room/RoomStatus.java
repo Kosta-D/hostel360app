@@ -1,4 +1,10 @@
 package com.hostel360.room;
 
-/** Housekeeping state. Whether a room is occupied is derived from stays, not stored here. */
-public enum RoomStatus { AVAILABLE, CLEANING, OUT_OF_ORDER }
+public enum RoomStatus {
+    /** Clean and free, can be booked. */
+    AVAILABLE,
+    /** Free of guests but not ready for use. */
+    NEEDS_CLEANING,
+    /** Someone is currently staying. */
+    TAKEN
+}

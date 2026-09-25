@@ -3,6 +3,7 @@ package com.hostel360.room;
 import com.hostel360.common.NotFoundException;
 import com.hostel360.room.RoomDto.Request;
 import com.hostel360.room.RoomDto.Response;
+import com.hostel360.room.RoomDto.StatusRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,7 +20,7 @@ public class RoomController {
 
     @GetMapping
     public List<Response> listRooms() {
-        return repo.findAllByOrderByNameAsc().stream().map(Response::from).toList();
+        return repo.findAllByOrderByNumberAsc().stream().map(Response::from).toList();
     }
 
     @GetMapping("/{id}")
@@ -40,6 +41,15 @@ public class RoomController {
     public Response updateRoom(@PathVariable Long id, @Valid @RequestBody Request req) {
         var room = find(id);
         req.applyTo(room);
+        return Response.from(repo.saveAndFlush(room));
+    }
+
+    /** Quick status change from the rooms list (e.g. after cleaning). */
+    @PatchMapping("/{id}/status")
+    @Transactional
+    public Response updateRoomStatus(@PathVariable Long id, @Valid @RequestBody StatusRequest req) {
+        var room = find(id);
+        room.setStatus(req.status());
         return Response.from(repo.saveAndFlush(room));
     }
 
