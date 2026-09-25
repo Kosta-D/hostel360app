@@ -171,6 +171,11 @@ export interface Settings {
   hostelName: string;
   /** @minimum 0.0001 */
   eurToRsd: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  bookingCommission: number;
 }
 
 export type RoomRequestStatus = typeof RoomRequestStatus[keyof typeof RoomRequestStatus];
@@ -260,6 +265,96 @@ export interface Guest {
   note?: string | null;
 }
 
+export interface RentPaymentRequest {
+  stayId: number;
+  month: string;
+  paid: boolean;
+}
+
+export type ExpenseRequestCategory = typeof ExpenseRequestCategory[keyof typeof ExpenseRequestCategory];
+
+
+export const ExpenseRequestCategory = {
+  CLEANING: 'CLEANING',
+  LAUNDRY: 'LAUNDRY',
+  REPAIRS: 'REPAIRS',
+  ELECTRICITY: 'ELECTRICITY',
+  WATER: 'WATER',
+  HEATING: 'HEATING',
+  INTERNET: 'INTERNET',
+  GARBAGE: 'GARBAGE',
+  STAFF: 'STAFF',
+  TAXES: 'TAXES',
+  EQUIPMENT: 'EQUIPMENT',
+  OTHER: 'OTHER',
+} as const;
+
+export type ExpenseRequestCurrency = typeof ExpenseRequestCurrency[keyof typeof ExpenseRequestCurrency];
+
+
+export const ExpenseRequestCurrency = {
+  EUR: 'EUR',
+  RSD: 'RSD',
+} as const;
+
+export interface ExpenseRequest {
+  date: string;
+  category: ExpenseRequestCategory;
+  /** @minimum 0 */
+  amount: number;
+  currency: ExpenseRequestCurrency;
+  /**
+     * @minLength 0
+     * @maxLength 500
+     */
+  note?: string;
+  repeatMonthly: boolean;
+}
+
+export type ExpenseCategory = typeof ExpenseCategory[keyof typeof ExpenseCategory];
+
+
+export const ExpenseCategory = {
+  CLEANING: 'CLEANING',
+  LAUNDRY: 'LAUNDRY',
+  REPAIRS: 'REPAIRS',
+  ELECTRICITY: 'ELECTRICITY',
+  WATER: 'WATER',
+  HEATING: 'HEATING',
+  INTERNET: 'INTERNET',
+  GARBAGE: 'GARBAGE',
+  STAFF: 'STAFF',
+  TAXES: 'TAXES',
+  EQUIPMENT: 'EQUIPMENT',
+  OTHER: 'OTHER',
+} as const;
+
+export type ExpenseCurrency = typeof ExpenseCurrency[keyof typeof ExpenseCurrency];
+
+
+export const ExpenseCurrency = {
+  EUR: 'EUR',
+  RSD: 'RSD',
+} as const;
+
+export interface Expense {
+  id: number;
+  date: string;
+  category: ExpenseCategory;
+  amount: number;
+  currency: ExpenseCurrency;
+  eurToRsd: number;
+  amountEur: number;
+  /** @nullable */
+  note?: string | null;
+  repeatMonthly: boolean;
+  /**
+     * First day of the last month a repeating expense counts in
+     * @nullable
+     */
+  repeatUntil?: string | null;
+}
+
 export interface BookingImportResult {
   imported: number;
   alreadyInApp: number;
@@ -295,6 +390,96 @@ export interface RoomStatusRequest {
   status: RoomStatusRequestStatus;
 }
 
+export type CategoryTotalCategory = typeof CategoryTotalCategory[keyof typeof CategoryTotalCategory];
+
+
+export const CategoryTotalCategory = {
+  CLEANING: 'CLEANING',
+  LAUNDRY: 'LAUNDRY',
+  REPAIRS: 'REPAIRS',
+  ELECTRICITY: 'ELECTRICITY',
+  WATER: 'WATER',
+  HEATING: 'HEATING',
+  INTERNET: 'INTERNET',
+  GARBAGE: 'GARBAGE',
+  STAFF: 'STAFF',
+  TAXES: 'TAXES',
+  EQUIPMENT: 'EQUIPMENT',
+  OTHER: 'OTHER',
+} as const;
+
+export interface CategoryTotal {
+  category: CategoryTotalCategory;
+  amount: number;
+}
+
+/**
+ * Income counts on the arrival date; long-term rent counts once per month.
+ */
+export interface MonthSummary {
+  /** First day of the month */
+  month: string;
+  booking: number;
+  direct: number;
+  longTerm: number;
+  income: number;
+  commission: number;
+  expenses: number;
+  costs: number;
+  profit: number;
+  /** Expenses by category, largest first */
+  byCategory: CategoryTotal[];
+  arrivals: number;
+}
+
+export type UnpaidItemCurrency = typeof UnpaidItemCurrency[keyof typeof UnpaidItemCurrency];
+
+
+export const UnpaidItemCurrency = {
+  EUR: 'EUR',
+  RSD: 'RSD',
+} as const;
+
+/**
+ * Short stays only
+ * @nullable
+ */
+export type UnpaidItemPaymentStatus = typeof UnpaidItemPaymentStatus[keyof typeof UnpaidItemPaymentStatus] | null;
+
+
+export const UnpaidItemPaymentStatus = {
+  NOT_PAID: 'NOT_PAID',
+  PARTLY_PAID: 'PARTLY_PAID',
+  PAID: 'PAID',
+} as const;
+
+/**
+ * A short stay not fully paid, or one unpaid month of a long-term stay
+ */
+export interface UnpaidItem {
+  stayId: number;
+  guestName: string;
+  roomNumber: number;
+  roomName: string;
+  longTerm: boolean;
+  checkIn: string;
+  /** @nullable */
+  checkOut?: string | null;
+  /**
+     * Rent month (first day) for long-term stays
+     * @nullable
+     */
+  month?: string | null;
+  amount: number;
+  currency: UnpaidItemCurrency;
+  amountEur: number;
+  /**
+     * Short stays only
+     * @nullable
+     */
+  paymentStatus?: UnpaidItemPaymentStatus;
+}
+
 export type ListStaysParams = {
 from?: string;
 to?: string;
@@ -307,6 +492,10 @@ export type ImportBookingBody = {
 
 export type ListGuestsParams = {
 q?: string;
+};
+
+export type ListExpensesParams = {
+month: string;
 };
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -1107,6 +1296,191 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getDeleteGuestMutationOptions(options), queryClient);
     }
 
+export const setRentPaid = (
+    rentPaymentRequest: RentPaymentRequest,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<void>(
+      {url: `/api/finance/rent-payments`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: rentPaymentRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getSetRentPaidMutationKey = () => ['setRentPaid'] as const;
+
+export const getSetRentPaidMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setRentPaid>>, TError,SetRentPaidMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof setRentPaid>>, TError,SetRentPaidMutationVariables, TContext> => {
+
+const mutationKey = getSetRentPaidMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setRentPaid>>, SetRentPaidMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  setRentPaid(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetRentPaidMutationResult = NonNullable<Awaited<ReturnType<typeof setRentPaid>>>
+    export type SetRentPaidMutationBody = RentPaymentRequest
+    export type SetRentPaidMutationError = unknown
+    export type SetRentPaidMutationVariables = {data: RentPaymentRequest}
+
+    export const useSetRentPaid = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setRentPaid>>, TError,SetRentPaidMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof setRentPaid>>,
+        TError,
+        SetRentPaidMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetRentPaidMutationOptions(options), queryClient);
+    }
+
+export const updateExpense = (
+    id: number,
+    expenseRequest: ExpenseRequest,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Expense>(
+      {url: `/api/expenses/${id}`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: expenseRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getUpdateExpenseMutationKey = () => ['updateExpense'] as const;
+
+export const getUpdateExpenseMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateExpense>>, TError,UpdateExpenseMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateExpense>>, TError,UpdateExpenseMutationVariables, TContext> => {
+
+const mutationKey = getUpdateExpenseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateExpense>>, UpdateExpenseMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateExpense(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateExpenseMutationResult = NonNullable<Awaited<ReturnType<typeof updateExpense>>>
+    export type UpdateExpenseMutationBody = ExpenseRequest
+    export type UpdateExpenseMutationError = unknown
+    export type UpdateExpenseMutationVariables = {id: number;data: ExpenseRequest}
+
+    export const useUpdateExpense = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateExpense>>, TError,UpdateExpenseMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateExpense>>,
+        TError,
+        UpdateExpenseMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateExpenseMutationOptions(options), queryClient);
+    }
+
+export const deleteExpense = (
+    id: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<void>(
+      {url: `/api/expenses/${id}`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeleteExpenseMutationKey = () => ['deleteExpense'] as const;
+
+export const getDeleteExpenseMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExpense>>, TError,DeleteExpenseMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteExpense>>, TError,DeleteExpenseMutationVariables, TContext> => {
+
+const mutationKey = getDeleteExpenseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteExpense>>, DeleteExpenseMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteExpense(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteExpenseMutationResult = NonNullable<Awaited<ReturnType<typeof deleteExpense>>>
+
+    export type DeleteExpenseMutationError = unknown
+    export type DeleteExpenseMutationVariables = {id: number}
+
+    export const useDeleteExpense = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExpense>>, TError,DeleteExpenseMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteExpense>>,
+        TError,
+        DeleteExpenseMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteExpenseMutationOptions(options), queryClient);
+    }
+
 export const listStays = (
     params?: ListStaysParams,
  options?: SecondParameter<typeof http>,signal?: AbortSignal
@@ -1255,6 +1629,66 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateStayMutationOptions(options), queryClient);
+    }
+
+export const markPaid = (
+    id: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Stay>(
+      {url: `/api/stays/${id}/paid`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getMarkPaidMutationKey = () => ['markPaid'] as const;
+
+export const getMarkPaidMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markPaid>>, TError,MarkPaidMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof markPaid>>, TError,MarkPaidMutationVariables, TContext> => {
+
+const mutationKey = getMarkPaidMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markPaid>>, MarkPaidMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  markPaid(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkPaidMutationResult = NonNullable<Awaited<ReturnType<typeof markPaid>>>
+
+    export type MarkPaidMutationError = unknown
+    export type MarkPaidMutationVariables = {id: number}
+
+    export const useMarkPaid = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markPaid>>, TError,MarkPaidMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof markPaid>>,
+        TError,
+        MarkPaidMutationVariables,
+        TContext
+      > => {
+      return useMutation(getMarkPaidMutationOptions(options), queryClient);
     }
 
 export const checkOut = (
@@ -1802,6 +2236,216 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getCreateGuestMutationOptions(options), queryClient);
     }
 
+export const listExpenses = (
+    params: ListExpensesParams,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Expense[]>(
+      {url: `/api/expenses`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListExpensesQueryKey = (params?: ListExpensesParams,) => {
+    return [
+    `/api/expenses`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListExpensesQueryOptions = <TData = Awaited<ReturnType<typeof listExpenses>>, TError = unknown>(params: ListExpensesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExpenses>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListExpensesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listExpenses>>> = ({ signal }) => listExpenses(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listExpenses>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListExpensesQueryResult = NonNullable<Awaited<ReturnType<typeof listExpenses>>>
+export type ListExpensesQueryError = unknown
+
+
+export function useListExpenses<TData = Awaited<ReturnType<typeof listExpenses>>, TError = unknown>(
+ params: ListExpensesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExpenses>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listExpenses>>,
+          TError,
+          Awaited<ReturnType<typeof listExpenses>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListExpenses<TData = Awaited<ReturnType<typeof listExpenses>>, TError = unknown>(
+ params: ListExpensesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExpenses>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listExpenses>>,
+          TError,
+          Awaited<ReturnType<typeof listExpenses>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListExpenses<TData = Awaited<ReturnType<typeof listExpenses>>, TError = unknown>(
+ params: ListExpensesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExpenses>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListExpenses<TData = Awaited<ReturnType<typeof listExpenses>>, TError = unknown>(
+ params: ListExpensesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExpenses>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListExpensesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const createExpense = (
+    expenseRequest: ExpenseRequest,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Expense>(
+      {url: `/api/expenses`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: expenseRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateExpenseMutationKey = () => ['createExpense'] as const;
+
+export const getCreateExpenseMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createExpense>>, TError,CreateExpenseMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof createExpense>>, TError,CreateExpenseMutationVariables, TContext> => {
+
+const mutationKey = getCreateExpenseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createExpense>>, CreateExpenseMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createExpense(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateExpenseMutationResult = NonNullable<Awaited<ReturnType<typeof createExpense>>>
+    export type CreateExpenseMutationBody = ExpenseRequest
+    export type CreateExpenseMutationError = unknown
+    export type CreateExpenseMutationVariables = {data: ExpenseRequest}
+
+    export const useCreateExpense = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createExpense>>, TError,CreateExpenseMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createExpense>>,
+        TError,
+        CreateExpenseMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateExpenseMutationOptions(options), queryClient);
+    }
+
+export const stopRepeating = (
+    id: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Expense>(
+      {url: `/api/expenses/${id}/stop`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getStopRepeatingMutationKey = () => ['stopRepeating'] as const;
+
+export const getStopRepeatingMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopRepeating>>, TError,StopRepeatingMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof stopRepeating>>, TError,StopRepeatingMutationVariables, TContext> => {
+
+const mutationKey = getStopRepeatingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stopRepeating>>, StopRepeatingMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  stopRepeating(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StopRepeatingMutationResult = NonNullable<Awaited<ReturnType<typeof stopRepeating>>>
+
+    export type StopRepeatingMutationError = unknown
+    export type StopRepeatingMutationVariables = {id: number}
+
+    export const useStopRepeating = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopRepeating>>, TError,StopRepeatingMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof stopRepeating>>,
+        TError,
+        StopRepeatingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStopRepeatingMutationOptions(options), queryClient);
+    }
+
 export const login = (
     loginRequest: LoginRequest,
  options?: SecondParameter<typeof http>,signal?: AbortSignal
@@ -1926,3 +2570,171 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getUpdateRoomStatusMutationOptions(options), queryClient);
     }
+
+export const financeYear = (
+    year: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<MonthSummary[]>(
+      {url: `/api/finance/year/${year}`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getFinanceYearQueryKey = (year: number,) => {
+    return [
+    `/api/finance/year/${year}`
+    ] as const;
+    }
+
+
+export const getFinanceYearQueryOptions = <TData = Awaited<ReturnType<typeof financeYear>>, TError = unknown>(year: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof financeYear>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getFinanceYearQueryKey(year);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof financeYear>>> = ({ signal }) => financeYear(year, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: year !== null && year !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof financeYear>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type FinanceYearQueryResult = NonNullable<Awaited<ReturnType<typeof financeYear>>>
+export type FinanceYearQueryError = unknown
+
+
+export function useFinanceYear<TData = Awaited<ReturnType<typeof financeYear>>, TError = unknown>(
+ year: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof financeYear>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof financeYear>>,
+          TError,
+          Awaited<ReturnType<typeof financeYear>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFinanceYear<TData = Awaited<ReturnType<typeof financeYear>>, TError = unknown>(
+ year: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof financeYear>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof financeYear>>,
+          TError,
+          Awaited<ReturnType<typeof financeYear>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFinanceYear<TData = Awaited<ReturnType<typeof financeYear>>, TError = unknown>(
+ year: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof financeYear>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useFinanceYear<TData = Awaited<ReturnType<typeof financeYear>>, TError = unknown>(
+ year: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof financeYear>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getFinanceYearQueryOptions(year,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const listUnpaid = (
+
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<UnpaidItem[]>(
+      {url: `/api/finance/unpaid`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListUnpaidQueryKey = () => {
+    return [
+    `/api/finance/unpaid`
+    ] as const;
+    }
+
+
+export const getListUnpaidQueryOptions = <TData = Awaited<ReturnType<typeof listUnpaid>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUnpaid>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListUnpaidQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listUnpaid>>> = ({ signal }) => listUnpaid(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listUnpaid>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListUnpaidQueryResult = NonNullable<Awaited<ReturnType<typeof listUnpaid>>>
+export type ListUnpaidQueryError = unknown
+
+
+export function useListUnpaid<TData = Awaited<ReturnType<typeof listUnpaid>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUnpaid>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listUnpaid>>,
+          TError,
+          Awaited<ReturnType<typeof listUnpaid>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUnpaid<TData = Awaited<ReturnType<typeof listUnpaid>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUnpaid>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listUnpaid>>,
+          TError,
+          Awaited<ReturnType<typeof listUnpaid>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUnpaid<TData = Awaited<ReturnType<typeof listUnpaid>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUnpaid>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListUnpaid<TData = Awaited<ReturnType<typeof listUnpaid>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUnpaid>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListUnpaidQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}

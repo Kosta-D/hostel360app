@@ -11,7 +11,7 @@ export function SettingsPage() {
   const { data } = useGetSettings()
   const queryClient = useQueryClient()
   const form = useForm<Settings>({
-    initialValues: { hostelName: '', eurToRsd: 0 },
+    initialValues: { hostelName: '', eurToRsd: 0, bookingCommission: 15 },
     validate: {
       hostelName: (v) => (v.trim() ? null : 'Required'),
       eurToRsd: (v) => (v > 0 ? null : 'Must be greater than 0'),
@@ -44,6 +44,15 @@ export function SettingsPage() {
             {form.values.eurToRsd > 0 && (
               <Text size="sm" c="dimmed">Example: {money(100)} = {money(100 * form.values.eurToRsd, 'RSD')}</Text>
             )}
+            <NumberInput
+              label="Booking.com commission"
+              suffix=" %"
+              min={0}
+              max={100}
+              decimalScale={2}
+              description="Counted as a cost on every Booking.com stay. Past stays keep the rate they were saved with."
+              {...form.getInputProps('bookingCommission')}
+            />
             <Button type="submit" loading={save.isPending} disabled={!form.isDirty()}>Save</Button>
           </Stack>
         </form>

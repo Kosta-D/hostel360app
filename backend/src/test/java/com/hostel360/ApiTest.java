@@ -95,7 +95,7 @@ class ApiTest {
     @Test
     void updatesExchangeRate() throws Exception {
         mvc.perform(authed(get("/api/settings"))).andExpect(jsonPath("$.eurToRsd").value(117.4));
-        mvc.perform(authed(put("/api/settings")).content("{\"hostelName\":\"Hostel 360\",\"eurToRsd\":117.2}"))
+        mvc.perform(authed(put("/api/settings")).content("{\"hostelName\":\"Hostel 360\",\"eurToRsd\":117.2,\"bookingCommission\":15}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eurToRsd").value(117.2));
     }
@@ -257,5 +257,65 @@ class ApiTest {
         mvc.perform(multipart("/api/stays/import-booking").file(new org.springframework.mock.web.MockMultipartFile("file", "x.txt", "text/plain", "hello".getBytes()))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isConflict());
+    }
+
+    long createId(String url, String body) throws Exception {
+        var res = mvc.perform(authed(post(url)).content(body)).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        return json.readTree(res).get("id").asLong();
+    }
+
+    String expense(String date, String category, int amount, boolean repeat) throws Exception {
+        return json.writeValueAsString(Map.of("date", date, "category", category, "amount", amount, "currency", "EUR", "repeatMonthly", repeat));
+    }
+
+    @Test
+    void financeYearAddsIncomeCommissionAndExpenses() throws Exception {
+        createId("/api/stays", stay(roomId(12), "Fin Booking", 1, false, "2032-03-10", "2032-03-12", "EUR", 100));
+        var direct = new java.util.HashMap<String, Object>(json.readValue(stay(roomId(13), "Fin Direct", 1, false, "2032-03-20", "2032-03-21", "EUR", 50), Map.class));
+        direct.put("source", "DIRECT");
+        createId("/api/stays", json.writeValueAsString(direct));
+        createId("/api/stays", stay(roomId(1), "Fin Tenant", 1, true, "2032-02-01", "2032-05-01", "EUR", 300));
+        createId("/api/expenses", expense("2032-03-05", "CLEANING", 20, false));
+        var internet = createId("/api/expenses", expense("2032-01-15", "INTERNET", 30, true));
+
+        mvc.perform(authed(get("/api/finance/year/2032")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(12))
+                .andExpect(jsonPath("$[0].expenses").value(30.0))
+                .andExpect(jsonPath("$[0].profit").value(-30.0))
+                .andExpect(jsonPath("$[1].longTerm").value(300.0))
+                .andExpect(jsonPath("$[2].booking").value(100.0))
+                .andExpect(jsonPath("$[2].direct").value(50.0))
+                .andExpect(jsonPath("$[2].longTerm").value(300.0))
+                .andExpect(jsonPath("$[2].income").value(450.0))
+                .andExpect(jsonPath("$[2].commission").value(15.0))
+                .andExpect(jsonPath("$[2].expenses").value(50.0))
+                .andExpect(jsonPath("$[2].profit").value(385.0))
+                .andExpect(jsonPath("$[2].byCategory[0].category").value("INTERNET"))
+                .andExpect(jsonPath("$[4].longTerm").value(0))
+                .andExpect(jsonPath("$[11].expenses").value(30.0));
+        mvc.perform(authed(get("/api/expenses?month=2032-03-01"))).andExpect(jsonPath("$.length()").value(2));
+
+        mvc.perform(authed(post("/api/expenses/" + internet + "/stop"))).andExpect(jsonPath("$.repeatUntil").value("2032-01-01"));
+        mvc.perform(authed(get("/api/finance/year/2032"))).andExpect(jsonPath("$[1].expenses").value(0));
+    }
+
+    @Test
+    void unpaidListsShortStaysAndRentMonthsUntilPaid() throws Exception {
+        var tenant = createId("/api/stays", stay(roomId(2), "Old Tenant", 1, true, "2021-01-01", "2021-03-01", "EUR", 250));
+        var guest = createId("/api/stays", stay(roomId(20), "Old Guest", 1, false, "2021-01-10", "2021-01-12", "EUR", 40));
+        var unpaid = "$[?(@.stayId == %d)]";
+
+        mvc.perform(authed(get("/api/finance/unpaid")))
+                .andExpect(jsonPath(unpaid.formatted(tenant) + ".month").value(org.hamcrest.Matchers.contains("2021-01-01", "2021-02-01")))
+                .andExpect(jsonPath(unpaid.formatted(guest) + ".amountEur").value(org.hamcrest.Matchers.contains(40.0)));
+
+        mvc.perform(authed(put("/api/finance/rent-payments")).content(json.writeValueAsString(Map.of("stayId", tenant, "month", "2021-01-01", "paid", true))))
+                .andExpect(status().isNoContent());
+        mvc.perform(authed(post("/api/stays/" + guest + "/paid"))).andExpect(jsonPath("$.paymentStatus").value("PAID"));
+
+        mvc.perform(authed(get("/api/finance/unpaid")))
+                .andExpect(jsonPath(unpaid.formatted(tenant) + ".month").value(org.hamcrest.Matchers.contains("2021-02-01")))
+                .andExpect(jsonPath(unpaid.formatted(guest)).isEmpty());
     }
 }

@@ -66,6 +66,12 @@ public class StayController {
         return Response.from(service.checkOut(id));
     }
 
+    @PostMapping("/{id}/paid")
+    @Transactional
+    public Response markPaid(@PathVariable Long id) {
+        return Response.from(service.markPaid(id));
+    }
+
     @PostMapping("/{id}/cancel")
     @Transactional
     public Response cancelStay(@PathVariable Long id) {

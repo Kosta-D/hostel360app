@@ -10,4 +10,9 @@ public interface SettingsRepository extends JpaRepository<Settings, Long> {
     default BigDecimal eurToRsd() {
         return findById(1L).map(Settings::getEurToRsd).orElseThrow();
     }
+
+    /** Current Booking.com commission in percent, saved on each Booking.com stay. */
+    default BigDecimal bookingCommission() {
+        return findById(1L).map(Settings::getBookingCommission).orElseThrow();
+    }
 }

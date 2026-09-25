@@ -7,6 +7,8 @@ import com.hostel360.guest.GuestRepository;
 import com.hostel360.room.RoomRepository;
 import com.hostel360.room.RoomStatus;
 import com.hostel360.settings.SettingsRepository;
+import com.hostel360.stay.StayEnums.PaymentStatus;
+import com.hostel360.stay.StayEnums.StaySource;
 import com.hostel360.stay.StayEnums.StayStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -60,6 +62,12 @@ public class StayService {
         return stay;
     }
 
+    public Stay markPaid(Long id) {
+        var stay = find(id);
+        stay.setPaymentStatus(PaymentStatus.PAID);
+        return stay;
+    }
+
     public Stay cancel(Long id) {
         var stay = find(id);
         requireStatus(stay, StayStatus.BOOKED, "cancel");
@@ -105,7 +113,10 @@ public class StayService {
         stay.setGuest(resolveGuest(req));
         stay.setPeople(req.people());
         stay.setLongTerm(longTerm);
-        stay.setSource(longTerm ? null : req.source());
+        var source = longTerm ? null : req.source();
+        if (source != StaySource.BOOKING) stay.setCommissionPct(null);
+        else if (stay.getSource() != StaySource.BOOKING || stay.getCommissionPct() == null) stay.setCommissionPct(settings.bookingCommission());
+        stay.setSource(source);
         stay.setCheckIn(req.checkIn());
         stay.setCheckOut(req.checkOut());
         if (stay.getAmount() == null || stay.getAmount().compareTo(req.amount()) != 0 || stay.getCurrency() != req.currency()) {

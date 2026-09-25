@@ -1,6 +1,6 @@
 # Hostel360
 
-A mini ERP for a small hostel. It covers rooms, guests and stays, finance, utilities, and maintenance.
+A mini ERP for a small hostel. It covers rooms, guests and stays, finance (income, expenses including utility bills, profit), and maintenance.
 
 | Part | Stack |
 |------|-------|

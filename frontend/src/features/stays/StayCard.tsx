@@ -46,9 +46,13 @@ export function StayCard({ stay, actions, onEdit }: Props) {
         <Group gap={6}>
           <Badge variant="light" color={kind.color}>{kind.label}</Badge>
           <Badge variant="outline" color={STATUS[stay.status].color}>{STATUS[stay.status].label}</Badge>
-          <Badge variant="dot" color={PAYMENT[stay.paymentStatus].color}>
-            {money(stay.amount, stay.currency)}{stay.longTerm ? ' / month' : ''} · {PAYMENT[stay.paymentStatus].label}
-          </Badge>
+          {stay.longTerm ? (
+            <Badge variant="dot" color="gray">{money(stay.amount, stay.currency)} / month</Badge>
+          ) : (
+            <Badge variant="dot" color={PAYMENT[stay.paymentStatus].color}>
+              {money(stay.amount, stay.currency)} · {PAYMENT[stay.paymentStatus].label}
+            </Badge>
+          )}
         </Group>
         {stay.status === 'BOOKED' && (
           <Button size="xs" leftSection={<IconDoorEnter size={14} />} loading={actions.checkIn.isPending}

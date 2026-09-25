@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
@@ -54,7 +53,7 @@ public final class StayDto {
             var room = s.getRoom();
             var guest = s.getGuest();
             Integer nights = s.isLongTerm() || s.getCheckOut() == null ? null : (int) ChronoUnit.DAYS.between(s.getCheckIn(), s.getCheckOut());
-            var amountEur = s.getCurrency() == Currency.EUR ? s.getAmount() : s.getAmount().divide(s.getEurToRsd(), 2, RoundingMode.HALF_UP);
+            var amountEur = s.getCurrency().toEur(s.getAmount(), s.getEurToRsd());
             return new Response(s.getId(), new RoomRef(room.getId(), room.getNumber(), room.getName()),
                     new GuestRef(guest.getId(), guest.getName(), guest.getCountry()), s.getPeople(), s.isLongTerm(),
                     s.getSource(), s.getCheckIn(), s.getCheckOut(), nights, s.getAmount(), s.getCurrency(), s.getEurToRsd(),

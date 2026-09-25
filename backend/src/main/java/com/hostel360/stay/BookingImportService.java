@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Turns a Booking.com reservations export into stays. Only confirmed ("ok") reservations are imported;
  * rooms are picked by their Booking.com room type, and reservations already in the app are skipped.
- * Past stays come in checked out and paid, stays in progress checked in, and future ones booked.
+ * Past stays come in checked out, stays in progress checked in (both paid), and future ones booked.
  */
 @Service
 @Transactional
@@ -46,7 +46,7 @@ public class BookingImportService {
 
     public Result importExport(InputStream file) {
         var reservations = BookingExportReader.read(file);
-        var run = new Run(settings.eurToRsd(), LocalDate.now());
+        var run = new Run(settings.eurToRsd(), settings.bookingCommission(), LocalDate.now());
         reservations.stream()
                 .sorted(Comparator.comparing(Reservation::checkIn).thenComparing(Reservation::line))
                 .forEach(run::add);
@@ -54,13 +54,14 @@ public class BookingImportService {
     }
 
     private final class Run {
-        final BigDecimal rate;
+        final BigDecimal rate, commission;
         final LocalDate today;
         int imported, alreadyInApp, notImported;
         final List<String> shortened = new ArrayList<>(), problems = new ArrayList<>();
 
-        Run(BigDecimal rate, LocalDate today) {
+        Run(BigDecimal rate, BigDecimal commission, LocalDate today) {
             this.rate = rate;
+            this.commission = commission;
             this.today = today;
         }
 
@@ -149,13 +150,15 @@ public class BookingImportService {
             stay.setPeople(people);
             stay.setLongTerm(false);
             stay.setSource(StaySource.BOOKING);
+            stay.setCommissionPct(commission);
             stay.setCheckIn(r.checkIn());
             stay.setCheckOut(r.checkOut());
             stay.setAmount(amount);
             stay.setCurrency(currency);
             stay.setEurToRsd(rate);
             stay.setStatus(status);
-            stay.setPaymentStatus(status == StayStatus.CHECKED_OUT ? PaymentStatus.PAID : PaymentStatus.NOT_PAID);
+            // Money is collected on arrival, so anyone who has arrived has paid.
+            stay.setPaymentStatus(status == StayStatus.BOOKED ? PaymentStatus.NOT_PAID : PaymentStatus.PAID);
             if (status == StayStatus.CHECKED_IN) room.setStatus(RoomStatus.TAKEN);
             stay.setBookingRef(ref);
             stays.save(stay);
