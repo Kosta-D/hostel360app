@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: hostel360
+      POSTGRES_USER: hostel360
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-hostel360}
+    volumes: [db-data:/var/lib/postgresql/data]
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hostel360"]
+      interval: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/hostel360
+      DB_PASSWORD: ${DB_PASSWORD:-hostel360}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-at-least-32-chars}
+    depends_on:
+      db: { condition: service_healthy }
+
+  frontend:
+    build: ./frontend
+    ports: ["8081:80"]
+    depends_on: [backend]
+
+volumes:
+  db-data:
