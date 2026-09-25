@@ -4,7 +4,7 @@ import type { Icon } from '@tabler/icons-react'
 export function StatCard({ label, value, hint, icon: Icon }: { label: string; value: string | number; hint?: string; icon: Icon }) {
   return (
     <Paper withBorder p="md">
-      <Group justify="space-between" align="flex-start">
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
         <div>
           <Text size="xs" c="dimmed" tt="uppercase" fw={600}>{label}</Text>
           <Text fz={28} fw={700} mt={4}>{value}</Text>

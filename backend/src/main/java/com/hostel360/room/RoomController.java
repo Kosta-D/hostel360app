@@ -1,9 +1,11 @@
 package com.hostel360.room;
 
+import com.hostel360.common.BusinessException;
 import com.hostel360.common.NotFoundException;
 import com.hostel360.room.RoomDto.Request;
 import com.hostel360.room.RoomDto.Response;
 import com.hostel360.room.RoomDto.StatusRequest;
+import com.hostel360.stay.StayRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RoomController {
     private final RoomRepository repo;
+    private final StayRepository stays;
 
     @GetMapping
     public List<Response> listRooms() {
@@ -56,7 +59,9 @@ public class RoomController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteRoom(@PathVariable Long id) {
-        repo.delete(find(id));
+        var room = find(id);
+        if (stays.existsByRoomId(id)) throw new BusinessException("Room " + room.getNumber() + " has stays and can't be deleted.");
+        repo.delete(room);
     }
 
     private Room find(Long id) {

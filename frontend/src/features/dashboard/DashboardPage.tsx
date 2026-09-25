@@ -1,23 +1,52 @@
-import { SimpleGrid } from '@mantine/core'
-import { IconBed, IconBrush, IconDoorEnter, IconKey } from '@tabler/icons-react'
-import { RoomStatus, useListRooms } from '@/api/generated'
+import { SimpleGrid, Stack, Text } from '@mantine/core'
+import { IconBed, IconBrush, IconDoorEnter, IconDoorExit } from '@tabler/icons-react'
+import dayjs from 'dayjs'
+import { useState } from 'react'
+import { useListRooms, useListStays, type Stay } from '@/api/generated'
+import { ISO, diffDays, today } from '@/shared/dates'
 import { PageHeader } from '@/shared/PageHeader'
 import { StatCard } from '@/shared/StatCard'
+import { groupStays } from '@/features/stays/groupStays'
+import { StayCard } from '@/features/stays/StayCard'
+import { StayDrawer, type StayTarget } from '@/features/stays/StayDrawer'
+import { useStayActions } from '@/features/stays/useStayActions'
+
+const monthStart = dayjs().startOf('month').format(ISO)
+const monthEnd = dayjs().add(1, 'month').startOf('month').format(ISO)
+
+/** Short-stay nights that fall inside the current month. */
+const nightsThisMonth = (stays: Stay[]) =>
+  stays
+    .filter((s) => !s.longTerm && s.checkOut && s.status !== 'CANCELLED')
+    .reduce((sum, s) => sum + Math.max(0, diffDays(s.checkIn > monthStart ? s.checkIn : monthStart, s.checkOut! < monthEnd ? s.checkOut! : monthEnd)), 0)
 
 export function DashboardPage() {
   const { data: rooms = [] } = useListRooms()
-  const count = (status: RoomStatus) => rooms.filter((r) => r.status === status).length
-  const longTerm = rooms.filter((r) => r.longTerm).length
+  const { data: stays = [] } = useListStays({ from: monthStart, to: dayjs().add(1, 'year').format(ISO) })
+  const [target, setTarget] = useState<StayTarget>(null)
+  const actions = useStayActions(() => setTarget(null))
+  const t = today()
+  const g = groupStays(stays, t)
+  const taken = rooms.filter((r) => r.status === 'TAKEN').length
+  const cleaning = rooms.filter((r) => r.status === 'NEEDS_CLEANING').length
+  const todo = [...g.arriving, ...g.leaving]
 
   return (
     <>
-      <PageHeader title="Dashboard" description="Today at a glance" />
-      <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }}>
-        <StatCard label="Available" value={count(RoomStatus.AVAILABLE)} hint="Ready to book" icon={IconDoorEnter} />
-        <StatCard label="Taken" value={count(RoomStatus.TAKEN)} hint="Guests staying now" icon={IconKey} />
-        <StatCard label="Needs cleaning" value={count(RoomStatus.NEEDS_CLEANING)} icon={IconBrush} />
-        <StatCard label="Rooms" value={rooms.length} hint={`${longTerm} long term, ${rooms.length - longTerm} short term`} icon={IconBed} />
+      <PageHeader title="Dashboard" description={dayjs().format('dddd, D MMMM YYYY')} />
+      <SimpleGrid cols={{ base: 2, lg: 4 }} mb="xl">
+        <StatCard label="Arriving today" value={g.arriving.filter((s) => s.checkIn === t).length} hint={g.arriving.length > 0 ? `${g.arriving.length} to check in` : undefined} icon={IconDoorEnter} />
+        <StatCard label="Leaving today" value={g.leaving.length} icon={IconDoorExit} />
+        <StatCard label="Occupancy" value={`${taken} / ${rooms.length}`} hint={`${nightsThisMonth(stays)} nights sold this month`} icon={IconBed} />
+        <StatCard label="Needs cleaning" value={cleaning} icon={IconBrush} />
       </SimpleGrid>
+
+      <Text fw={600} mb="xs">To do today</Text>
+      <Stack gap="xs">
+        {todo.length === 0 && <Text size="sm" c="dimmed">No check-ins or check-outs waiting.</Text>}
+        {todo.map((s) => <StayCard key={s.id} stay={s} actions={actions} onEdit={(stay) => setTarget({ stay })} />)}
+      </Stack>
+      <StayDrawer target={target} actions={actions} onClose={() => setTarget(null)} />
     </>
   )
 }

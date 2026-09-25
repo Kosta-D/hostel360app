@@ -37,6 +37,8 @@ backend/src/main/java/com/hostel360/
   auth/       login and JWT
   settings/   hostel name and EUR → RSD rate
   room/       rooms module (controller, dto, entity, repository)
+  guest/      guests (name, country, note)
+  stay/       bookings: rules in StayService (capacity, no double booking, check-in/out)
 backend/src/main/resources/db/migration/   Flyway SQL migrations
 
 frontend/src/
@@ -55,5 +57,7 @@ frontend/src/
 ## Conventions
 
 - Amounts are stored in EUR, the base currency. Records entered in RSD also store the exchange rate that applied when they were saved.
-- Rooms have a number, name, floor (1 or 2), capacity (1 or 2), a long-term flag, and a status: available, needs cleaning, or taken. The status is set by hand for now; the Stays module will update it on check-in and check-out.
+- Rooms have a number, name, floor (1 or 2), capacity (1 or 2), a long-term flag, and a status: available, needs cleaning, or taken. Check-in sets a room to taken and check-out to needs cleaning; it can also be changed by hand.
 - Every API error is returned as `application/problem+json`.
+- A stay covers the dates [checkIn, checkOut): the departure day is free for the next guest. Long-term stays use whole months (checkIn = 1st of the first month, checkOut = 1st of the month after the last) and may have no checkOut (indefinite).
+- Booking.com commission is not stored on stays; Finance will calculate it.
