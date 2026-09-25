@@ -340,6 +340,92 @@
         }
       }
     },
+    "/api/finance/rent-payments": {
+      "put": {
+        "tags": [
+          "finance-controller"
+        ],
+        "operationId": "setRentPaid",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RentPaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/expenses/{id}": {
+      "put": {
+        "tags": [
+          "expense-controller"
+        ],
+        "operationId": "updateExpense",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "expense-controller"
+        ],
+        "operationId": "deleteExpense",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/stays": {
       "get": {
         "tags": [
@@ -409,6 +495,37 @@
         "responses": {
           "201": {
             "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stay"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stays/{id}/paid": {
+      "post": {
+        "tags": [
+          "stay-controller"
+        ],
+        "operationId": "markPaid",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
@@ -663,6 +780,99 @@
         }
       }
     },
+    "/api/expenses": {
+      "get": {
+        "tags": [
+          "expense-controller"
+        ],
+        "operationId": "listExpenses",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Expense"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "expense-controller"
+        ],
+        "operationId": "createExpense",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/expenses/{id}/stop": {
+      "post": {
+        "tags": [
+          "expense-controller"
+        ],
+        "operationId": "stopRepeating",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/login": {
       "post": {
         "tags": [
@@ -727,6 +937,63 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/Room"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/year/{year}": {
+      "get": {
+        "tags": [
+          "finance-controller"
+        ],
+        "operationId": "financeYear",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MonthSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/unpaid": {
+      "get": {
+        "tags": [
+          "finance-controller"
+        ],
+        "operationId": "listUnpaid",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnpaidItem"
+                  }
                 }
               }
             }
@@ -977,9 +1244,15 @@
           "eurToRsd": {
             "type": "number",
             "minimum": 0.0001
+          },
+          "bookingCommission": {
+            "type": "number",
+            "maximum": 100,
+            "minimum": 0
           }
         },
         "required": [
+          "bookingCommission",
           "eurToRsd",
           "hostelName"
         ]
@@ -1137,6 +1410,152 @@
           "name"
         ]
       },
+      "RentPaymentRequest": {
+        "type": "object",
+        "properties": {
+          "stayId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "month": {
+            "type": "string",
+            "format": "date"
+          },
+          "paid": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "month",
+          "paid",
+          "stayId"
+        ]
+      },
+      "ExpenseRequest": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "CLEANING",
+              "LAUNDRY",
+              "REPAIRS",
+              "ELECTRICITY",
+              "WATER",
+              "HEATING",
+              "INTERNET",
+              "GARBAGE",
+              "STAFF",
+              "TAXES",
+              "EQUIPMENT",
+              "OTHER"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "EUR",
+              "RSD"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          },
+          "repeatMonthly": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "amount",
+          "category",
+          "currency",
+          "date",
+          "repeatMonthly"
+        ]
+      },
+      "Expense": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "CLEANING",
+              "LAUNDRY",
+              "REPAIRS",
+              "ELECTRICITY",
+              "WATER",
+              "HEATING",
+              "INTERNET",
+              "GARBAGE",
+              "STAFF",
+              "TAXES",
+              "EQUIPMENT",
+              "OTHER"
+            ]
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "EUR",
+              "RSD"
+            ]
+          },
+          "eurToRsd": {
+            "type": "number"
+          },
+          "amountEur": {
+            "type": "number"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "repeatMonthly": {
+            "type": "boolean"
+          },
+          "repeatUntil": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "First day of the last month a repeating expense counts in"
+          }
+        },
+        "required": [
+          "amount",
+          "amountEur",
+          "category",
+          "currency",
+          "date",
+          "eurToRsd",
+          "id",
+          "repeatMonthly"
+        ]
+      },
       "BookingImportResult": {
         "type": "object",
         "properties": {
@@ -1222,6 +1641,172 @@
         },
         "required": [
           "status"
+        ]
+      },
+      "CategoryTotal": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "CLEANING",
+              "LAUNDRY",
+              "REPAIRS",
+              "ELECTRICITY",
+              "WATER",
+              "HEATING",
+              "INTERNET",
+              "GARBAGE",
+              "STAFF",
+              "TAXES",
+              "EQUIPMENT",
+              "OTHER"
+            ]
+          },
+          "amount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "amount",
+          "category"
+        ]
+      },
+      "MonthSummary": {
+        "type": "object",
+        "description": "Income counts on the arrival date; long-term rent counts once per month.",
+        "properties": {
+          "month": {
+            "type": "string",
+            "format": "date",
+            "description": "First day of the month"
+          },
+          "booking": {
+            "type": "number"
+          },
+          "direct": {
+            "type": "number"
+          },
+          "longTerm": {
+            "type": "number"
+          },
+          "income": {
+            "type": "number"
+          },
+          "commission": {
+            "type": "number"
+          },
+          "expenses": {
+            "type": "number"
+          },
+          "costs": {
+            "type": "number"
+          },
+          "profit": {
+            "type": "number"
+          },
+          "byCategory": {
+            "type": "array",
+            "description": "Expenses by category, largest first",
+            "items": {
+              "$ref": "#/components/schemas/CategoryTotal"
+            }
+          },
+          "arrivals": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "arrivals",
+          "booking",
+          "byCategory",
+          "commission",
+          "costs",
+          "direct",
+          "expenses",
+          "income",
+          "longTerm",
+          "month",
+          "profit"
+        ]
+      },
+      "UnpaidItem": {
+        "type": "object",
+        "description": "A short stay not fully paid, or one unpaid month of a long-term stay",
+        "properties": {
+          "stayId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "guestName": {
+            "type": "string"
+          },
+          "roomNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roomName": {
+            "type": "string"
+          },
+          "longTerm": {
+            "type": "boolean"
+          },
+          "checkIn": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkOut": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "month": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Rent month (first day) for long-term stays"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "EUR",
+              "RSD"
+            ]
+          },
+          "amountEur": {
+            "type": "number"
+          },
+          "paymentStatus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Short stays only",
+            "enum": [
+              "NOT_PAID",
+              "PARTLY_PAID",
+              "PAID"
+            ]
+          }
+        },
+        "required": [
+          "amount",
+          "amountEur",
+          "checkIn",
+          "currency",
+          "guestName",
+          "longTerm",
+          "roomName",
+          "roomNumber",
+          "stayId"
         ]
       }
     },

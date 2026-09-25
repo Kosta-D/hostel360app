@@ -1,0 +1,5 @@
+package com.hostel360.finance;
+
+public enum ExpenseCategory {
+    CLEANING, LAUNDRY, REPAIRS, ELECTRICITY, WATER, HEATING, INTERNET, GARBAGE, STAFF, TAXES, EQUIPMENT, OTHER
+}

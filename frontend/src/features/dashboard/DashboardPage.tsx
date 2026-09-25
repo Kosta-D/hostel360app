@@ -1,8 +1,9 @@
 import { SimpleGrid, Stack, Text } from '@mantine/core'
-import { IconBed, IconBrush, IconDoorEnter, IconDoorExit } from '@tabler/icons-react'
+import { IconBed, IconBrush, IconCash, IconDoorEnter, IconDoorExit } from '@tabler/icons-react'
 import dayjs from 'dayjs'
 import { useState } from 'react'
-import { useListRooms, useListStays, type Stay } from '@/api/generated'
+import { useFinanceYear, useListRooms, useListStays, type Stay } from '@/api/generated'
+import { money } from '@/shared/format'
 import { ISO, diffDays, today } from '@/shared/dates'
 import { PageHeader } from '@/shared/PageHeader'
 import { StatCard } from '@/shared/StatCard'
@@ -30,15 +31,19 @@ export function DashboardPage() {
   const taken = rooms.filter((r) => r.status === 'TAKEN').length
   const cleaning = rooms.filter((r) => r.status === 'NEEDS_CLEANING').length
   const todo = [...g.arriving, ...g.leaving]
+  const { data: year } = useFinanceYear(dayjs().year())
+  const month = year?.[dayjs().month()]
 
   return (
     <>
       <PageHeader title="Dashboard" description={dayjs().format('dddd, D MMMM YYYY')} />
-      <SimpleGrid cols={{ base: 2, lg: 4 }} mb="xl">
+      <SimpleGrid cols={{ base: 2, lg: 5 }} mb="xl">
         <StatCard label="Arriving today" value={g.arriving.filter((s) => s.checkIn === t).length} hint={g.arriving.length > 0 ? `${g.arriving.length} to check in` : undefined} icon={IconDoorEnter} />
         <StatCard label="Leaving today" value={g.leaving.length} icon={IconDoorExit} />
         <StatCard label="Occupancy" value={`${taken} / ${rooms.length}`} hint={`${nightsThisMonth(stays)} nights sold this month`} icon={IconBed} />
         <StatCard label="Needs cleaning" value={cleaning} icon={IconBrush} />
+        <StatCard label="Profit this month" value={month ? money(month.profit) : '…'}
+          hint={month ? `${money(month.income)} in · ${money(month.costs)} out` : undefined} icon={IconCash} />
       </SimpleGrid>
 
       <Text fw={600} mb="xs">To do today</Text>

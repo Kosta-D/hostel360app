@@ -151,10 +151,14 @@ export function StayForm({ stay, defaults, saving, onSubmit }: Props) {
           <Text size="xs" c="dimmed" mt={-8}>≈ {money(Number(v.amount) / settings.eurToRsd)} at 1 EUR = {settings.eurToRsd} RSD</Text>
         )}
 
-        <Input.Wrapper label="Paid">
-          <SegmentedControl fullWidth data={toOptions(PAYMENT)} value={v.paymentStatus}
-            onChange={(x) => form.setFieldValue('paymentStatus', x as Values['paymentStatus'])} />
-        </Input.Wrapper>
+        {v.longTerm ? (
+          <Text size="xs" c="dimmed" mt={-8}>Rent is marked paid month by month in Finance → Unpaid.</Text>
+        ) : (
+          <Input.Wrapper label="Paid">
+            <SegmentedControl fullWidth data={toOptions(PAYMENT)} value={v.paymentStatus}
+              onChange={(x) => form.setFieldValue('paymentStatus', x as Values['paymentStatus'])} />
+          </Input.Wrapper>
+        )}
         <Textarea label="Note" autosize minRows={2} {...form.getInputProps('note')} />
         <Button type="submit" loading={saving}>Save</Button>
       </Stack>
