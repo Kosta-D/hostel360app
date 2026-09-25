@@ -3,12 +3,12 @@ import { useForm } from '@mantine/form'
 import type { Room, RoomRequest } from '@/api/generated'
 import { ROOM_STATUS_OPTIONS } from './roomStatus'
 
-const EMPTY: RoomRequest = { number: 0, name: '', floor: 1, capacity: 1, longTerm: false, status: 'AVAILABLE' }
+const EMPTY: RoomRequest = { number: 0, name: '', floor: 1, capacity: 1, longTerm: false, status: 'AVAILABLE', bookingType: '' }
 const ONE_OR_TWO = ['1', '2']
 
 export function RoomForm({ room, saving, onSubmit }: { room?: Room; saving: boolean; onSubmit: (data: RoomRequest) => void }) {
   const form = useForm<RoomRequest>({
-    initialValues: room ?? EMPTY,
+    initialValues: room ? { ...room, bookingType: room.bookingType ?? '' } : EMPTY,
     validate: {
       number: (v) => (v >= 1 && v <= 999 ? null : 'Enter a room number'),
       name: (v) => (v.trim() ? null : 'Required'),
@@ -32,6 +32,8 @@ export function RoomForm({ room, saving, onSubmit }: { room?: Room; saving: bool
         </Group>
         <Select label="Status" data={ROOM_STATUS_OPTIONS} allowDeselect={false} {...form.getInputProps('status')} />
         <Switch label="Long-term rental" description="Rented monthly rather than per night" {...form.getInputProps('longTerm', { type: 'checkbox' })} />
+        <TextInput label="Booking.com room type" description="Exactly as in the extranet export; used when importing reservations"
+          placeholder="e.g. Double or Twin Room with Shared Bathroom" {...form.getInputProps('bookingType')} />
         <Button type="submit" loading={saving}>Save</Button>
       </Stack>
     </form>

@@ -4,6 +4,12 @@
     "title": "Hostel360 API",
     "version": "v1"
   },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
   "security": [
     {
       "bearer": []
@@ -507,6 +513,44 @@
         }
       }
     },
+    "/api/stays/import-booking": {
+      "post": {
+        "tags": [
+          "stay-controller"
+        ],
+        "operationId": "importBooking",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingImportResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/rooms": {
       "get": {
         "tags": [
@@ -976,6 +1020,11 @@
               "NEEDS_CLEANING",
               "TAKEN"
             ]
+          },
+          "bookingType": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 0
           }
         },
         "required": [
@@ -1018,6 +1067,12 @@
               "AVAILABLE",
               "NEEDS_CLEANING",
               "TAKEN"
+            ]
+          },
+          "bookingType": {
+            "type": [
+              "string",
+              "null"
             ]
           }
         },
@@ -1080,6 +1135,44 @@
         "required": [
           "id",
           "name"
+        ]
+      },
+      "BookingImportResult": {
+        "type": "object",
+        "properties": {
+          "imported": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "alreadyInApp": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "notImported": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shortened": {
+            "type": "array",
+            "description": "Stays ended early because the next guest got the room",
+            "items": {
+              "type": "string"
+            }
+          },
+          "problems": {
+            "type": "array",
+            "description": "Reservations that could not be imported",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "alreadyInApp",
+          "imported",
+          "notImported",
+          "problems",
+          "shortened"
         ]
       },
       "LoginRequest": {

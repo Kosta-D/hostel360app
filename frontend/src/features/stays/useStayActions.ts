@@ -5,13 +5,21 @@ import {
 } from '@/api/generated'
 import { notify } from '@/shared/notify'
 
-/** All stay mutations in one place; each refreshes stays, rooms and guests on success. */
-export function useStayActions(onSaved?: () => void) {
+/** Reloads everything a stay change can affect: stays, rooms and guests. */
+export function useRefreshStays() {
   const queryClient = useQueryClient()
-  const done = (message: string, close = false) => () => {
+  return () => {
     for (const key of [getListStaysQueryKey(), getListRoomsQueryKey(), getListGuestsQueryKey()]) {
       queryClient.invalidateQueries({ queryKey: [key[0]] })
     }
+  }
+}
+
+/** All stay mutations in one place; each refreshes stays, rooms and guests on success. */
+export function useStayActions(onSaved?: () => void) {
+  const refresh = useRefreshStays()
+  const done = (message: string, close = false) => () => {
+    refresh()
     notify.ok(message)
     if (close) onSaved?.()
   }

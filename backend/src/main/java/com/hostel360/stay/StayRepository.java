@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface StayRepository extends JpaRepository<Stay, Long> {
     LocalDate MIN = LocalDate.of(1900, 1, 1);
@@ -25,6 +26,21 @@ public interface StayRepository extends JpaRepository<Stay, Long> {
               and s.status in (com.hostel360.stay.StayEnums.StayStatus.BOOKED, com.hostel360.stay.StayEnums.StayStatus.CHECKED_IN)
               and s.checkIn < :to and (s.checkOut is null or s.checkOut > :from)""")
     List<Stay> findOverlapping(long roomId, long excludeId, LocalDate from, LocalDate to);
+
+    /** Non-cancelled stays in a room overlapping [from, to), past ones included. */
+    @Query("""
+            select s from Stay s join fetch s.guest
+            where s.room.id = :roomId and s.status <> com.hostel360.stay.StayEnums.StayStatus.CANCELLED
+              and s.checkIn < :to and (s.checkOut is null or s.checkOut > :from)""")
+    List<Stay> findUsingRoom(long roomId, LocalDate from, LocalDate to);
+
+    boolean existsByBookingRef(String bookingRef);
+
+    /** A stay entered by hand for the same guest and arrival, not yet linked to a Booking.com reservation. */
+    @Query("""
+            select s from Stay s where s.bookingRef is null and s.checkIn = :checkIn
+              and lower(s.guest.name) = lower(:guestName) order by s.id limit 1""")
+    Optional<Stay> findManualStay(LocalDate checkIn, String guestName);
 
     boolean existsByGuestId(Long guestId);
 

@@ -205,6 +205,11 @@ export interface RoomRequest {
   capacity: number;
   longTerm: boolean;
   status: RoomRequestStatus;
+  /**
+     * @minLength 0
+     * @maxLength 150
+     */
+  bookingType?: string;
 }
 
 export type RoomStatus = typeof RoomStatus[keyof typeof RoomStatus];
@@ -224,6 +229,8 @@ export interface Room {
   capacity: number;
   longTerm: boolean;
   status: RoomStatus;
+  /** @nullable */
+  bookingType?: string | null;
 }
 
 export interface GuestRequest {
@@ -251,6 +258,16 @@ export interface Guest {
   country?: string | null;
   /** @nullable */
   note?: string | null;
+}
+
+export interface BookingImportResult {
+  imported: number;
+  alreadyInApp: number;
+  notImported: number;
+  /** Stays ended early because the next guest got the room */
+  shortened: string[];
+  /** Reservations that could not be imported */
+  problems: string[];
 }
 
 export interface LoginRequest {
@@ -282,6 +299,10 @@ export type ListStaysParams = {
 from?: string;
 to?: string;
 guestId?: number;
+};
+
+export type ImportBookingBody = {
+  file: Blob | File;
 };
 
 export type ListGuestsParams = {
@@ -1414,6 +1435,72 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCancelStayMutationOptions(options), queryClient);
+    }
+
+export const importBooking = (
+    importBookingBody?: ImportBookingBody,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+      const formData = new FormData();
+if(importBookingBody?.file !== undefined) {
+ formData.append(`file`, importBookingBody.file);
+ }
+
+      return http<BookingImportResult>(
+      {url: `/api/stays/import-booking`, method: 'POST',
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData, signal
+    },
+      options);
+    }
+
+
+
+
+export const getImportBookingMutationKey = () => ['importBooking'] as const;
+
+export const getImportBookingMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importBooking>>, TError,ImportBookingMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof importBooking>>, TError,ImportBookingMutationVariables, TContext> => {
+
+const mutationKey = getImportBookingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importBooking>>, ImportBookingMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  importBooking(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportBookingMutationResult = NonNullable<Awaited<ReturnType<typeof importBooking>>>
+    export type ImportBookingMutationBody = ImportBookingBody | undefined
+    export type ImportBookingMutationError = unknown
+    export type ImportBookingMutationVariables = {data?: ImportBookingBody}
+
+    export const useImportBooking = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importBooking>>, TError,ImportBookingMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof importBooking>>,
+        TError,
+        ImportBookingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getImportBookingMutationOptions(options), queryClient);
     }
 
 export const listRooms = (
