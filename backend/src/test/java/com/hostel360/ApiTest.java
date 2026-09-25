@@ -53,23 +53,40 @@ class ApiTest {
     }
 
     @Test
+    void seedsTheHostelRooms() throws Exception {
+        mvc.perform(authed(get("/api/rooms")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(9))
+                .andExpect(jsonPath("$[0].number").value(1))
+                .andExpect(jsonPath("$[0].name").value("Ksenija"))
+                .andExpect(jsonPath("$[8].number").value(23))
+                .andExpect(jsonPath("$[8].floor").value(2));
+    }
+
+    @Test
     void roomCrud() throws Exception {
-        var room = Map.of("name", "101", "capacity", 2, "pricePerNight", 35, "status", "AVAILABLE");
+        var room = Map.of("number", 101, "name", "Test room", "floor", 1, "capacity", 2, "longTerm", false, "status", "AVAILABLE");
         var created = mvc.perform(authed(post("/api/rooms")).content(json.writeValueAsString(room)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("101"))
+                .andExpect(jsonPath("$.number").value(101))
                 .andReturn().getResponse().getContentAsString();
         var id = json.readTree(created).get("id").asLong();
 
         mvc.perform(authed(post("/api/rooms")).content(json.writeValueAsString(room)))
                 .andExpect(status().isConflict());
-        mvc.perform(authed(post("/api/rooms")).content("{\"name\":\"\",\"capacity\":0}"))
+        mvc.perform(authed(post("/api/rooms")).content(json.writeValueAsString(Map.of(
+                        "number", 102, "name", "Too big", "floor", 3, "capacity", 3, "longTerm", false, "status", "AVAILABLE"))))
                 .andExpect(status().isBadRequest());
 
         mvc.perform(authed(put("/api/rooms/" + id)).content(json.writeValueAsString(
-                        Map.of("name", "101", "capacity", 3, "pricePerNight", 40, "status", "CLEANING"))))
+                        Map.of("number", 101, "name", "Test room", "floor", 2, "capacity", 1, "longTerm", true, "status", "TAKEN"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CLEANING"));
+                .andExpect(jsonPath("$.floor").value(2))
+                .andExpect(jsonPath("$.longTerm").value(true));
+
+        mvc.perform(authed(patch("/api/rooms/" + id + "/status")).content("{\"status\":\"NEEDS_CLEANING\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("NEEDS_CLEANING"));
 
         mvc.perform(authed(delete("/api/rooms/" + id))).andExpect(status().isNoContent());
         mvc.perform(authed(get("/api/rooms/" + id))).andExpect(status().isNotFound());

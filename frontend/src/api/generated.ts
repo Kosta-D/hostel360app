@@ -36,11 +36,16 @@ export type RoomRequestStatus = typeof RoomRequestStatus[keyof typeof RoomReques
 
 export const RoomRequestStatus = {
   AVAILABLE: 'AVAILABLE',
-  CLEANING: 'CLEANING',
-  OUT_OF_ORDER: 'OUT_OF_ORDER',
+  NEEDS_CLEANING: 'NEEDS_CLEANING',
+  TAKEN: 'TAKEN',
 } as const;
 
 export interface RoomRequest {
+  /**
+     * @minimum 1
+     * @maximum 999
+     */
+  number: number;
   /**
      * @minLength 0
      * @maxLength 50
@@ -48,17 +53,16 @@ export interface RoomRequest {
   name: string;
   /**
      * @minimum 1
-     * @maximum 50
+     * @maximum 2
+     */
+  floor: number;
+  /**
+     * @minimum 1
+     * @maximum 2
      */
   capacity: number;
-  /** @minimum 0 */
-  pricePerNight: number;
+  longTerm: boolean;
   status: RoomRequestStatus;
-  /**
-     * @minLength 0
-     * @maxLength 500
-     */
-  notes?: string;
 }
 
 export type RoomStatus = typeof RoomStatus[keyof typeof RoomStatus];
@@ -66,17 +70,18 @@ export type RoomStatus = typeof RoomStatus[keyof typeof RoomStatus];
 
 export const RoomStatus = {
   AVAILABLE: 'AVAILABLE',
-  CLEANING: 'CLEANING',
-  OUT_OF_ORDER: 'OUT_OF_ORDER',
+  NEEDS_CLEANING: 'NEEDS_CLEANING',
+  TAKEN: 'TAKEN',
 } as const;
 
 export interface Room {
   id: number;
+  number: number;
   name: string;
+  floor: number;
   capacity: number;
-  pricePerNight: number;
+  longTerm: boolean;
   status: RoomStatus;
-  notes: string;
 }
 
 export interface LoginRequest {
@@ -89,6 +94,19 @@ export interface LoginRequest {
 export interface TokenResponse {
   token: string;
   expiresAt: string;
+}
+
+export type RoomStatusRequestStatus = typeof RoomStatusRequestStatus[keyof typeof RoomStatusRequestStatus];
+
+
+export const RoomStatusRequestStatus = {
+  AVAILABLE: 'AVAILABLE',
+  NEEDS_CLEANING: 'NEEDS_CLEANING',
+  TAKEN: 'TAKEN',
+} as const;
+
+export interface RoomStatusRequest {
+  status: RoomStatusRequestStatus;
 }
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -678,4 +696,67 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getLoginMutationOptions(options), queryClient);
+    }
+
+export const updateRoomStatus = (
+    id: number,
+    roomStatusRequest: RoomStatusRequest,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Room>(
+      {url: `/api/rooms/${id}/status`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: roomStatusRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getUpdateRoomStatusMutationKey = () => ['updateRoomStatus'] as const;
+
+export const getUpdateRoomStatusMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRoomStatus>>, TError,UpdateRoomStatusMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRoomStatus>>, TError,UpdateRoomStatusMutationVariables, TContext> => {
+
+const mutationKey = getUpdateRoomStatusMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRoomStatus>>, UpdateRoomStatusMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateRoomStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRoomStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateRoomStatus>>>
+    export type UpdateRoomStatusMutationBody = RoomStatusRequest
+    export type UpdateRoomStatusMutationError = unknown
+    export type UpdateRoomStatusMutationVariables = {id: number;data: RoomStatusRequest}
+
+    export const useUpdateRoomStatus = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRoomStatus>>, TError,UpdateRoomStatusMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateRoomStatus>>,
+        TError,
+        UpdateRoomStatusMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateRoomStatusMutationOptions(options), queryClient);
     }

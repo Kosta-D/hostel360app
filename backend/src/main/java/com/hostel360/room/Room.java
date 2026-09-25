@@ -5,17 +5,16 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-
 @Entity
 @Getter
 @Setter
 public class Room extends BaseEntity {
+    private int number;
     private String name;
+    private int floor;
     private int capacity;
-    /** Price in EUR (base currency). */
-    private BigDecimal pricePerNight;
+    /** Rented long term (monthly tenant) rather than short term (nightly guests). */
+    private boolean longTerm;
     @Enumerated(EnumType.STRING)
     private RoomStatus status = RoomStatus.AVAILABLE;
-    private String notes;
 }

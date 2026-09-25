@@ -230,6 +230,47 @@
           }
         }
       }
+    },
+    "/api/rooms/{id}/status": {
+      "patch": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "updateRoomStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Room"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -254,39 +295,47 @@
       "RoomRequest": {
         "type": "object",
         "properties": {
+          "number": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 999,
+            "minimum": 1
+          },
           "name": {
             "type": "string",
             "maxLength": 50,
             "minLength": 0
           },
+          "floor": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 2,
+            "minimum": 1
+          },
           "capacity": {
             "type": "integer",
             "format": "int32",
-            "maximum": 50,
+            "maximum": 2,
             "minimum": 1
           },
-          "pricePerNight": {
-            "type": "number",
-            "minimum": 0
+          "longTerm": {
+            "type": "boolean"
           },
           "status": {
             "type": "string",
             "enum": [
               "AVAILABLE",
-              "CLEANING",
-              "OUT_OF_ORDER"
+              "NEEDS_CLEANING",
+              "TAKEN"
             ]
-          },
-          "notes": {
-            "type": "string",
-            "maxLength": 500,
-            "minLength": 0
           }
         },
         "required": [
           "capacity",
+          "floor",
+          "longTerm",
           "name",
-          "pricePerNight",
+          "number",
           "status"
         ]
       },
@@ -297,34 +346,40 @@
             "type": "integer",
             "format": "int64"
           },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
           "name": {
             "type": "string"
+          },
+          "floor": {
+            "type": "integer",
+            "format": "int32"
           },
           "capacity": {
             "type": "integer",
             "format": "int32"
           },
-          "pricePerNight": {
-            "type": "number"
+          "longTerm": {
+            "type": "boolean"
           },
           "status": {
             "type": "string",
             "enum": [
               "AVAILABLE",
-              "CLEANING",
-              "OUT_OF_ORDER"
+              "NEEDS_CLEANING",
+              "TAKEN"
             ]
-          },
-          "notes": {
-            "type": "string"
           }
         },
         "required": [
           "capacity",
+          "floor",
           "id",
+          "longTerm",
           "name",
-          "notes",
-          "pricePerNight",
+          "number",
           "status"
         ]
       },
@@ -359,6 +414,22 @@
         "required": [
           "expiresAt",
           "token"
+        ]
+      },
+      "RoomStatusRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "NEEDS_CLEANING",
+              "TAKEN"
+            ]
+          }
+        },
+        "required": [
+          "status"
         ]
       }
     },
