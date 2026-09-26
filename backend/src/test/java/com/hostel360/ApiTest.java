@@ -318,4 +318,43 @@ class ApiTest {
                 .andExpect(jsonPath(unpaid.formatted(tenant) + ".month").value(org.hamcrest.Matchers.contains("2021-02-01")))
                 .andExpect(jsonPath(unpaid.formatted(guest)).isEmpty());
     }
+
+    String stayFrom(String country, String source, String body) throws Exception {
+        var map = new java.util.HashMap<String, Object>(json.readValue(body, Map.class));
+        map.put("guestCountry", country);
+        if (source != null) map.put("source", source);
+        return json.writeValueAsString(map);
+    }
+
+    @Test
+    void statsYearCountsOccupancyMoneyAndCountries() throws Exception {
+        createId("/api/stays", stayFrom("Germany", "BOOKING", stay(roomId(20), "Stat Anna", 1, false, "2033-03-10", "2033-03-13", "EUR", 90)));
+        createId("/api/stays", stayFrom("Serbia", "DIRECT", stay(roomId(21), "Stat Marko", 2, false, "2033-03-30", "2033-04-02", "EUR", 60)));
+        createId("/api/stays", stayFrom("Serbia", null, stay(roomId(22), "Stat Tenant", 1, true, "2033-05-01", "2033-07-01", "EUR", 300)));
+
+        mvc.perform(authed(get("/api/stats/year/2033")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.previous").isEmpty())
+                .andExpect(jsonPath("$.totals.stays").value(2))
+                .andExpect(jsonPath("$.totals.nights").value(6))
+                .andExpect(jsonPath("$.totals.income").value(750.0))
+                .andExpect(jsonPath("$.totals.avgPrice").value(25.0))
+                .andExpect(jsonPath("$.totals.avgPeople").value(1.5))
+                .andExpect(jsonPath("$.totals.bookingShareStays").value(50.0))
+                .andExpect(jsonPath("$.totals.bookingShareIncome").value(60.0))
+                .andExpect(jsonPath("$.totals.guests").value(3))
+                .andExpect(jsonPath("$.months[2].nightsSold").value(5))
+                .andExpect(jsonPath("$.months[2].booking").value(90.0))
+                .andExpect(jsonPath("$.months[2].direct").value(60.0))
+                .andExpect(jsonPath("$.months[3].nightsSold").value(1))
+                .andExpect(jsonPath("$.months[4].longTerm").value(300.0))
+                .andExpect(jsonPath("$.rooms[?(@.number == 20)].months[2].occupied").value(org.hamcrest.Matchers.contains(9.7)))
+                .andExpect(jsonPath("$.rooms[?(@.number == 22)].months[4].longTerm").value(org.hamcrest.Matchers.contains(true)))
+                .andExpect(jsonPath("$.rooms[?(@.number == 22)].income").value(org.hamcrest.Matchers.contains(600.0)))
+                .andExpect(jsonPath("$.countries[0].country").value("Serbia"))
+                .andExpect(jsonPath("$.countries[0].guests").value(2))
+                .andExpect(jsonPath("$.countries[0].nights").value(64))
+                .andExpect(jsonPath("$.countries[1].country").value("Germany"));
+        mvc.perform(authed(get("/api/stats/year/2034"))).andExpect(jsonPath("$.previous.stays").value(2));
+    }
 }

@@ -19,7 +19,6 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
-import java.util.stream.Stream;
 
 /**
  * Profit and loss from stays and expenses. Short stays count on their arrival date; long-term rent
@@ -43,9 +42,9 @@ public class FinanceService {
         for (int m = 1; m <= 12; m++) months.put(YearMonth.of(year, m), new Totals());
 
         for (var s : active(stays.search(from, to, -1))) {
-            var eur = eur(s);
+            var eur = s.amountEur();
             if (s.isLongTerm()) {
-                rentMonths(s, YearMonth.of(year, 12)).map(months::get).filter(Objects::nonNull).forEach(t -> t.longTerm = t.longTerm.add(eur));
+                s.rentMonths(YearMonth.of(year, 12)).map(months::get).filter(Objects::nonNull).forEach(t -> t.longTerm = t.longTerm.add(eur));
             } else if (!s.getCheckIn().isBefore(from) && s.getCheckIn().isBefore(to)) {
                 var t = months.get(YearMonth.from(s.getCheckIn()));
                 t.arrivals++;
@@ -77,7 +76,7 @@ public class FinanceService {
         var result = new ArrayList<UnpaidItem>();
         for (var s : all) {
             if (s.isLongTerm()) {
-                rentMonths(s, YearMonth.from(today))
+                s.rentMonths(YearMonth.from(today))
                         .filter(m -> !paid.contains(s.getId() + "@" + m.atDay(1)))
                         .forEach(m -> result.add(item(s, m.atDay(1))));
             } else if (s.getPaymentStatus() != PaymentStatus.PAID) {
@@ -101,22 +100,9 @@ public class FinanceService {
         return list.stream().filter(s -> s.getStatus() != StayStatus.CANCELLED).toList();
     }
 
-    /** Months a long-term stay is rented, up to {@code limit} for an open-ended stay. */
-    private static Stream<YearMonth> rentMonths(Stay s, YearMonth limit) {
-        var first = YearMonth.from(s.getCheckIn());
-        var last = s.getCheckOut() == null ? limit : YearMonth.from(s.getCheckOut().minusDays(1));
-        if (last.isAfter(limit)) last = limit;
-        var end = last;
-        return Stream.iterate(first, m -> !m.isAfter(end), m -> m.plusMonths(1));
-    }
-
-    private static BigDecimal eur(Stay s) {
-        return s.getCurrency().toEur(s.getAmount(), s.getEurToRsd());
-    }
-
     private static UnpaidItem item(Stay s, LocalDate month) {
         return new UnpaidItem(s.getId(), s.getGuest().getName(), s.getRoom().getNumber(), s.getRoom().getName(), s.isLongTerm(),
-                s.getCheckIn(), s.getCheckOut(), month, s.getAmount(), s.getCurrency(), eur(s),
+                s.getCheckIn(), s.getCheckOut(), month, s.getAmount(), s.getCurrency(), s.amountEur(),
                 s.isLongTerm() ? null : s.getPaymentStatus());
     }
 

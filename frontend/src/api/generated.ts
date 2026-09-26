@@ -390,6 +390,83 @@ export interface RoomStatusRequest {
   status: RoomStatusRequestStatus;
 }
 
+export interface StatsCountry {
+  /**
+     * Empty when not known
+     * @nullable
+     */
+  country?: string | null;
+  guests: number;
+  stays: number;
+  nights: number;
+  income: number;
+}
+
+export interface StatsMonth {
+  month: string;
+  occupancy: number;
+  nightsSold: number;
+  nightsAvailable: number;
+  booking: number;
+  direct: number;
+  longTerm: number;
+  avgPrice: number;
+}
+
+export interface StatsRoomMonth {
+  /** Share of the month the room was occupied, in percent */
+  occupied: number;
+  /** A long-term tenant was in the room this month */
+  longTerm: boolean;
+}
+
+export interface StatsRoom {
+  id: number;
+  number: number;
+  name: string;
+  nightsSold: number;
+  /** Short-term occupancy for the year, in percent */
+  occupancy: number;
+  income: number;
+  avgPrice: number;
+  months: StatsRoomMonth[];
+}
+
+export interface StatsTotals {
+  /** Short stays that arrived in the period */
+  stays: number;
+  /** Nights of those stays */
+  nights: number;
+  income: number;
+  /** Short-term occupancy in percent (nights sold / nights available) */
+  occupancy: number;
+  /** Short-stay income per night */
+  avgPrice: number;
+  avgStayNights: number;
+  avgPeople: number;
+  guests: number;
+  /** Guests of this period who have stayed more than once */
+  returningGuests: number;
+  /** Share of short stays from Booking.com, in percent */
+  bookingShareStays: number;
+  /** Share of short-stay income from Booking.com, in percent */
+  bookingShareIncome: number;
+}
+
+export interface YearStats {
+  year: number;
+  totals: StatsTotals;
+  /**
+     * Last year's totals, when there were stays
+     * @nullable
+     */
+  previous?: StatsTotals;
+  months: StatsMonth[];
+  rooms: StatsRoom[];
+  /** Most nights first */
+  countries: StatsCountry[];
+}
+
 export type CategoryTotalCategory = typeof CategoryTotalCategory[keyof typeof CategoryTotalCategory];
 
 
@@ -2570,6 +2647,93 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getUpdateRoomStatusMutationOptions(options), queryClient);
     }
+
+export const statsYear = (
+    year: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<YearStats>(
+      {url: `/api/stats/year/${year}`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getStatsYearQueryKey = (year: number,) => {
+    return [
+    `/api/stats/year/${year}`
+    ] as const;
+    }
+
+
+export const getStatsYearQueryOptions = <TData = Awaited<ReturnType<typeof statsYear>>, TError = unknown>(year: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof statsYear>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getStatsYearQueryKey(year);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof statsYear>>> = ({ signal }) => statsYear(year, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: year !== null && year !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof statsYear>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type StatsYearQueryResult = NonNullable<Awaited<ReturnType<typeof statsYear>>>
+export type StatsYearQueryError = unknown
+
+
+export function useStatsYear<TData = Awaited<ReturnType<typeof statsYear>>, TError = unknown>(
+ year: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof statsYear>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof statsYear>>,
+          TError,
+          Awaited<ReturnType<typeof statsYear>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useStatsYear<TData = Awaited<ReturnType<typeof statsYear>>, TError = unknown>(
+ year: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof statsYear>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof statsYear>>,
+          TError,
+          Awaited<ReturnType<typeof statsYear>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useStatsYear<TData = Awaited<ReturnType<typeof statsYear>>, TError = unknown>(
+ year: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof statsYear>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useStatsYear<TData = Awaited<ReturnType<typeof statsYear>>, TError = unknown>(
+ year: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof statsYear>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getStatsYearQueryOptions(year,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const financeYear = (
     year: number,
