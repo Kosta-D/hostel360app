@@ -13,6 +13,9 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
+import java.util.stream.Stream;
 
 /**
  * One booking of a room by a guest. Dates are a half-open range [checkIn, checkOut).
@@ -48,4 +51,23 @@ public class Stay extends BaseEntity {
     private BigDecimal commissionPct;
     /** Booking.com reservation number for imported stays. */
     private String bookingRef;
+
+    public BigDecimal amountEur() {
+        return currency.toEur(amount, eurToRsd);
+    }
+
+    /** Nights of this stay inside [from, to); an open-ended stay runs through {@code to}. */
+    public int nightsWithin(LocalDate from, LocalDate to) {
+        var start = checkIn.isAfter(from) ? checkIn : from;
+        var end = checkOut == null || checkOut.isAfter(to) ? to : checkOut;
+        return Math.max(0, (int) ChronoUnit.DAYS.between(start, end));
+    }
+
+    /** Months a long-term stay is rented, up to {@code limit} for an open-ended stay. */
+    public Stream<YearMonth> rentMonths(YearMonth limit) {
+        var first = YearMonth.from(checkIn);
+        var last = checkOut == null ? limit : YearMonth.from(checkOut.minusDays(1));
+        var end = last.isAfter(limit) ? limit : last;
+        return Stream.iterate(first, m -> !m.isAfter(end), m -> m.plusMonths(1));
+    }
 }

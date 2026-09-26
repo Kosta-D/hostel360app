@@ -944,6 +944,37 @@
         }
       }
     },
+    "/api/stats/year/{year}": {
+      "get": {
+        "tags": [
+          "stats-controller"
+        ],
+        "operationId": "statsYear",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/YearStats"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/year/{year}": {
       "get": {
         "tags": [
@@ -1641,6 +1672,249 @@
         },
         "required": [
           "status"
+        ]
+      },
+      "StatsCountry": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Empty when not known"
+          },
+          "guests": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nights": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "income": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "guests",
+          "income",
+          "nights",
+          "stays"
+        ]
+      },
+      "StatsMonth": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "format": "date"
+          },
+          "occupancy": {
+            "type": "number"
+          },
+          "nightsSold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nightsAvailable": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "booking": {
+            "type": "number"
+          },
+          "direct": {
+            "type": "number"
+          },
+          "longTerm": {
+            "type": "number"
+          },
+          "avgPrice": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "avgPrice",
+          "booking",
+          "direct",
+          "longTerm",
+          "month",
+          "nightsAvailable",
+          "nightsSold",
+          "occupancy"
+        ]
+      },
+      "StatsRoom": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nightsSold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "occupancy": {
+            "type": "number",
+            "description": "Short-term occupancy for the year, in percent"
+          },
+          "income": {
+            "type": "number"
+          },
+          "avgPrice": {
+            "type": "number"
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsRoomMonth"
+            }
+          }
+        },
+        "required": [
+          "avgPrice",
+          "id",
+          "income",
+          "months",
+          "name",
+          "nightsSold",
+          "number",
+          "occupancy"
+        ]
+      },
+      "StatsRoomMonth": {
+        "type": "object",
+        "properties": {
+          "occupied": {
+            "type": "number",
+            "description": "Share of the month the room was occupied, in percent"
+          },
+          "longTerm": {
+            "type": "boolean",
+            "description": "A long-term tenant was in the room this month"
+          }
+        },
+        "required": [
+          "longTerm",
+          "occupied"
+        ]
+      },
+      "StatsTotals": {
+        "type": "object",
+        "properties": {
+          "stays": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Short stays that arrived in the period"
+          },
+          "nights": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Nights of those stays"
+          },
+          "income": {
+            "type": "number"
+          },
+          "occupancy": {
+            "type": "number",
+            "description": "Short-term occupancy in percent (nights sold / nights available)"
+          },
+          "avgPrice": {
+            "type": "number",
+            "description": "Short-stay income per night"
+          },
+          "avgStayNights": {
+            "type": "number"
+          },
+          "avgPeople": {
+            "type": "number"
+          },
+          "guests": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "returningGuests": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Guests of this period who have stayed more than once"
+          },
+          "bookingShareStays": {
+            "type": "number",
+            "description": "Share of short stays from Booking.com, in percent"
+          },
+          "bookingShareIncome": {
+            "type": "number",
+            "description": "Share of short-stay income from Booking.com, in percent"
+          }
+        },
+        "required": [
+          "avgPeople",
+          "avgPrice",
+          "avgStayNights",
+          "bookingShareIncome",
+          "bookingShareStays",
+          "guests",
+          "income",
+          "nights",
+          "occupancy",
+          "returningGuests",
+          "stays"
+        ]
+      },
+      "YearStats": {
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/StatsTotals"
+          },
+          "previous": {
+            "type": "null",
+            "$ref": "#/components/schemas/StatsTotals",
+            "description": "Last year's totals, when there were stays"
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsMonth"
+            }
+          },
+          "rooms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsRoom"
+            }
+          },
+          "countries": {
+            "type": "array",
+            "description": "Most nights first",
+            "items": {
+              "$ref": "#/components/schemas/StatsCountry"
+            }
+          }
+        },
+        "required": [
+          "countries",
+          "months",
+          "rooms",
+          "totals",
+          "year"
         ]
       },
       "CategoryTotal": {

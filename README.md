@@ -18,6 +18,10 @@ docker compose up --build
 
 Once it starts, open http://localhost:8081 and sign in with the credentials from `.env` (by default `admin` / `admin`).
 
+Downloaded libraries are cached between builds, so rebuilds are quick. To save more time:
+- rebuild only the side that changed: `docker compose up --build backend` (or `frontend`);
+- when no code changed, skip the build: `docker compose up`.
+
 ## Develop locally
 
 ```bash
