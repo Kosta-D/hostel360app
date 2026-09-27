@@ -15,6 +15,16 @@ export const CATEGORY: Record<ExpenseCategory, string> = {
   OTHER: 'Other',
 }
 
+/** Quick-view groups on the Expenses tab: every category belongs to exactly one. */
+export const GROUPS: { label: string; hint: string; categories: ExpenseCategory[] }[] = [
+  { label: 'Invested', hint: 'Equipment and other', categories: ['EQUIPMENT', 'OTHER'] },
+  {
+    label: 'Maintenance',
+    hint: 'Bills, repairs, cleaning, staff and taxes',
+    categories: ['ELECTRICITY', 'WATER', 'HEATING', 'INTERNET', 'GARBAGE', 'REPAIRS', 'CLEANING', 'LAUNDRY', 'STAFF', 'TAXES'],
+  },
+]
+
 export const CATEGORY_OPTIONS = Object.entries(CATEGORY).map(([value, label]) => ({ value, label }))
 
 /** Chart series colors (validated categorical slots 1 and 2), stepped for light and dark mode. */

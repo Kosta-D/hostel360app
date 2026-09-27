@@ -1,4 +1,4 @@
-import { AppShell, Badge, Burger, Group, NavLink, Text, Title, Tooltip, ActionIcon, useMantineColorScheme } from '@mantine/core'
+import { AppShell, Burger, Group, NavLink, Text, Title, Tooltip, ActionIcon, useMantineColorScheme } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconHome2, IconLogout, IconMoon, IconSun } from '@tabler/icons-react'
 import { Navigate, NavLink as RouterLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -40,16 +40,14 @@ export function Layout() {
       </AppShell.Header>
 
       <AppShell.Navbar p="xs">
-        {NAV.map(({ label, path, icon: Icon, ready }) => (
+        {NAV.map(({ label, path, icon: Icon }) => (
           <NavLink
             key={path}
             component={RouterLink}
             to={path}
             label={label}
             leftSection={<Icon size={18} stroke={1.6} />}
-            rightSection={ready ? null : <Badge size="xs" variant="light" color="gray">Soon</Badge>}
             active={path === '/' ? pathname === '/' : pathname.startsWith(path)}
-            disabled={!ready}
             onClick={close}
           />
         ))}

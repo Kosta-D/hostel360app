@@ -3,18 +3,20 @@ import { IconDots, IconPencil, IconPlayerStop, IconPlus, IconTrash } from '@tabl
 import { modals } from '@mantine/modals'
 import { useState } from 'react'
 import {
-  useCreateExpense, useDeleteExpense, useListExpenses, useStopRepeating, useUpdateExpense, type Expense,
+  useCreateExpense, useDeleteExpense, useListExpenses, useStopRepeating, useUpdateExpense, type Expense, type MonthSummary,
 } from '@/api/generated'
 import { fmtDate, fmtMonth } from '@/shared/dates'
 import { money } from '@/shared/format'
 import { notify } from '@/shared/notify'
 import { ExpenseForm } from './ExpenseForm'
+import { ExpenseSummary, type Span } from './ExpenseSummary'
 import { CATEGORY } from './financeLabels'
 import { useFinanceRefresh } from './useFinanceRefresh'
 
 type Target = { expense?: Expense } | null
 
-export function ExpensesTab({ month }: { month: string }) {
+export function ExpensesTab({ month, months }: { month: string; months?: MonthSummary[] }) {
+  const [span, setSpan] = useState<Span>('month')
   const { data: expenses = [], isLoading } = useListExpenses({ month })
   const [target, setTarget] = useState<Target>(null)
   const refresh = useFinanceRefresh()
@@ -38,8 +40,9 @@ export function ExpensesTab({ month }: { month: string }) {
 
   return (
     <>
+      <ExpenseSummary months={months} month={month} span={span} onSpan={setSpan} />
       <Group justify="space-between" mb="sm">
-        <Text fw={600}>{fmtMonth(month)}: {money(total)}</Text>
+        <Text fw={600}>Expenses in {fmtMonth(month)}: {money(total)}</Text>
         <Button leftSection={<IconPlus size={16} />} onClick={() => setTarget({})}>Add expense</Button>
       </Group>
       {expenses.length === 0 ? (
