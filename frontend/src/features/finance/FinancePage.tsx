@@ -43,7 +43,7 @@ export function FinancePage() {
         </Tabs.List>
         <Tabs.Panel value="month"><MonthTab summary={months?.[dayjs(month).month()]} /></Tabs.Panel>
         <Tabs.Panel value="year"><YearTab months={months} onPick={(m) => { setMonth(m); setTab('month') }} /></Tabs.Panel>
-        <Tabs.Panel value="expenses"><ExpensesTab month={month} /></Tabs.Panel>
+        <Tabs.Panel value="expenses"><ExpensesTab month={month} months={months} /></Tabs.Panel>
         <Tabs.Panel value="unpaid"><UnpaidTab /></Tabs.Panel>
       </Tabs>
     </>
