@@ -48,8 +48,8 @@ export function CalendarPage() {
             <Box style={grid} bg="var(--mantine-color-default-hover)">
               <Text size="xs" c="dimmed" p="xs">Room</Text>
               {days.map((d) => (
-                <Box key={d} ta="center" py={4} c={d === t ? 'teal' : undefined} fw={d === t ? 700 : undefined}>
-                  <Text size="10px" tt="uppercase" c="dimmed">{dayjs(d).format('dd')}</Text>
+                <Box key={d} ta="center" py={4} c={d === t ? 'forest' : undefined} fw={d === t ? 700 : undefined}>
+                  <Text size="10px" c="dimmed">{dayjs(d).format('dd')}</Text>
                   <Text size="sm" fw="inherit">{dayjs(d).format('D')}</Text>
                 </Box>
               ))}
@@ -84,7 +84,7 @@ function RoomRow({ room, days, start, end, today, grid, stays, onEmpty, onStay }
         <UnstyledButton key={d} aria-label={`Book room ${room.number} on ${fmtDate(d)}`} onClick={() => onEmpty(d)}
           style={{
             gridRow: 1, gridColumn: i + 2, borderLeft: '1px solid var(--mantine-color-default-border)',
-            background: d === today ? 'var(--mantine-color-teal-light)' : dayjs(d).day() % 6 === 0 ? 'var(--mantine-color-default-hover)' : undefined,
+            background: d === today ? 'var(--mantine-primary-color-light)' : dayjs(d).day() % 6 === 0 ? 'var(--mantine-color-default-hover)' : undefined,
           }} />
       ))}
       {stays.map((s) => {

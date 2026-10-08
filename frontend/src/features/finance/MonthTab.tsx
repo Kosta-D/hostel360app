@@ -1,5 +1,4 @@
 import { Group, Paper, SimpleGrid, Table, Text, Title } from '@mantine/core'
-import { IconArrowDownRight, IconArrowUpRight, IconScale } from '@tabler/icons-react'
 import type { MonthSummary } from '@/api/generated'
 import { money } from '@/shared/format'
 import { StatCard } from '@/shared/StatCard'
@@ -42,9 +41,9 @@ export function MonthTab({ summary }: { summary?: MonthSummary }) {
   return (
     <>
       <SimpleGrid cols={{ base: 1, sm: 3 }} mb="lg">
-        <StatCard label="Income" value={money(summary.income)} hint={`${summary.arrivals} arrivals · ${rsd(summary.income) ?? ''}`} icon={IconArrowUpRight} />
-        <StatCard label="Costs" value={money(summary.costs)} hint={rsd(summary.costs)} icon={IconArrowDownRight} />
-        <StatCard label="Profit" value={money(summary.profit)} hint={rsd(summary.profit)} icon={IconScale} />
+        <StatCard label="Income" value={money(summary.income)} hint={`${summary.arrivals} arrivals · ${rsd(summary.income) ?? ''}`} />
+        <StatCard label="Costs" value={money(summary.costs)} hint={rsd(summary.costs)} />
+        <StatCard label="Profit" value={money(summary.profit)} hint={rsd(summary.profit)} />
       </SimpleGrid>
       <SimpleGrid cols={{ base: 1, md: 2 }}>
         <Paper withBorder p="md">

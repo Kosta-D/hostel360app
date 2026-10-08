@@ -10,7 +10,7 @@ export function RoomStatusBadge({ status, onChange }: { status: RoomStatus; onCh
     <Menu position="bottom-start" withinPortal>
       <Menu.Target>
         <UnstyledButton aria-label={`Status: ${label}. Change status`}>
-          <Badge variant="light" color={color} rightSection={<IconChevronDown size={12} />} style={{ cursor: 'pointer' }}>
+          <Badge variant="dot" color={color} size="lg" rightSection={<IconChevronDown size={12} />} style={{ cursor: 'pointer' }}>
             {label}
           </Badge>
         </UnstyledButton>

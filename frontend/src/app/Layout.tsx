@@ -1,6 +1,6 @@
-import { AppShell, Burger, Group, NavLink, Text, Title, Tooltip, ActionIcon, useMantineColorScheme } from '@mantine/core'
+import { ActionIcon, AppShell, Box, Burger, Center, Group, NavLink, Title, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { IconHome2, IconLogout, IconMoon, IconSun } from '@tabler/icons-react'
+import { IconLogout, IconMoon, IconSun } from '@tabler/icons-react'
 import { Navigate, NavLink as RouterLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useGetSettings } from '@/api/generated'
 import { auth } from './auth'
@@ -18,13 +18,13 @@ export function Layout() {
   const logout = () => { auth.clear(); navigate('/login') }
 
   return (
-    <AppShell header={{ height: 56 }} navbar={{ width: 240, breakpoint: 'sm', collapsed: { mobile: !opened } }} padding="md">
+    <AppShell header={{ height: 56 }} navbar={{ width: 220, breakpoint: 'sm', collapsed: { mobile: !opened } }} padding={{ base: 'md', sm: 'xl' }}>
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
           <Group gap="xs">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <IconHome2 size={22} color="var(--mantine-primary-color-filled)" />
-            <Title order={4}>{settings?.hostelName ?? 'Hostel360'}</Title>
+            <Center w={28} h={28} bg="var(--mantine-primary-color-filled)" c="white" fw={700} fz="sm" style={{ borderRadius: 7 }} aria-hidden>H</Center>
+            <Title order={4} fw={600}>{settings?.hostelName ?? 'Hostel360'}</Title>
           </Group>
           <Group gap="xs">
             <Tooltip label="Toggle theme">
@@ -39,7 +39,7 @@ export function Layout() {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="xs">
+      <AppShell.Navbar p="sm">
         {NAV.map(({ label, path, icon: Icon }) => (
           <NavLink
             key={path}
@@ -51,10 +51,9 @@ export function Layout() {
             onClick={close}
           />
         ))}
-        <Text size="xs" c="dimmed" mt="auto" px="sm">Hostel360 v0.1</Text>
       </AppShell.Navbar>
 
-      <AppShell.Main><Outlet /></AppShell.Main>
+      <AppShell.Main><Box maw={1320}><Outlet /></Box></AppShell.Main>
     </AppShell>
   )
 }

@@ -18,7 +18,7 @@ export function StayCard({ stay, actions, onEdit }: Props) {
     <Paper withBorder p="sm">
       <Group justify="space-between" wrap="nowrap" align="flex-start">
         <Group gap="xs" style={{ minWidth: 0 }}>
-          <Text fw={700} truncate>{stay.guest.name}</Text>
+          <Text fw={600} truncate>{stay.guest.name}</Text>
           {stay.guest.country && <Text size="sm" c="dimmed">{stay.guest.country}</Text>}
         </Group>
         <Menu position="bottom-end" withinPortal>
@@ -38,14 +38,16 @@ export function StayCard({ stay, actions, onEdit }: Props) {
           </Menu.Dropdown>
         </Menu>
       </Group>
-      <Text size="sm">Room <b>{stay.room.number}</b> · {stay.room.name} · {stay.people} {stay.people > 1 ? 'people' : 'person'}</Text>
-      <Text size="sm" c="dimmed">{stayPeriod(stay)}</Text>
+      <Text size="sm">
+        Room <b>{stay.room.number}</b> · {stay.room.name} · {stay.people} {stay.people > 1 ? 'people' : 'person'}
+        <Text span c="dimmed"> · {stayPeriod(stay)}</Text>
+      </Text>
       {stay.note && <Text size="xs" c="dimmed">{stay.note}</Text>}
 
-      <Group justify="space-between" align="flex-end" mt={6} gap="xs">
+      <Group justify="space-between" align="center" mt={4} gap="xs">
         <Group gap={6}>
           <Badge variant="light" color={kind.color}>{kind.label}</Badge>
-          <Badge variant="outline" color={STATUS[stay.status].color}>{STATUS[stay.status].label}</Badge>
+          <Badge variant="default">{STATUS[stay.status].label}</Badge>
           {stay.longTerm ? (
             <Badge variant="dot" color="gray">{money(stay.amount, stay.currency)} / month</Badge>
           ) : (

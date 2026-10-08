@@ -138,7 +138,7 @@ export function RoomsPage() {
 }
 
 function RentalBadge({ room }: { room: Room }) {
-  return <Badge variant="outline" color={room.longTerm ? 'grape' : 'gray'}>{room.longTerm ? 'Long term' : 'Short term'}</Badge>
+  return <Badge variant="outline" color={room.longTerm ? 'clay' : 'gray'}>{room.longTerm ? 'Long term' : 'Short term'}</Badge>
 }
 
 function Capacity({ room }: { room: Room }) {

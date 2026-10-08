@@ -1,5 +1,4 @@
 import { Group, Paper, Progress, SegmentedControl, SimpleGrid, Table, Text, Title } from '@mantine/core'
-import { IconBuildingWarehouse, IconTool } from '@tabler/icons-react'
 import dayjs from 'dayjs'
 import type { ExpenseCategory, MonthSummary } from '@/api/generated'
 import { fmtMonth } from '@/shared/dates'
@@ -8,8 +7,6 @@ import { StatCard } from '@/shared/StatCard'
 import { CATEGORY, GROUPS } from './financeLabels'
 
 export type Span = 'month' | 'year'
-
-const ICONS = [IconBuildingWarehouse, IconTool]
 
 /** Invested and Maintenance totals plus cost per category, for the picked month or its whole year. */
 export function ExpenseSummary({ months, month, span, onSpan }: {
@@ -31,9 +28,9 @@ export function ExpenseSummary({ months, month, span, onSpan }: {
           data={[{ value: 'month', label: 'Month' }, { value: 'year', label: 'Year' }]} />
       </Group>
       <SimpleGrid cols={{ base: 1, xs: 2 }} mb="md">
-        {GROUPS.map((g, i) => {
+        {GROUPS.map((g) => {
           const sum = g.categories.reduce((s, c) => s + (byCategory.get(c) ?? 0), 0)
-          return <StatCard key={g.label} label={g.label} value={money(sum)} hint={`${share(sum)}% · ${g.hint}`} icon={ICONS[i]} />
+          return <StatCard key={g.label} label={g.label} value={money(sum)} hint={`${share(sum)}% · ${g.hint}`} />
         })}
       </SimpleGrid>
       <Paper withBorder p="md" mb="lg">
