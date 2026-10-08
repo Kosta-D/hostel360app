@@ -1,6 +1,6 @@
 import { BarChart } from '@mantine/charts'
 import { ActionIcon, Group, Paper, SimpleGrid, Table, Text, Title } from '@mantine/core'
-import { IconBed, IconBrandBooking, IconCash, IconChevronLeft, IconChevronRight, IconMoon, IconReceipt, IconUsers, IconUsersGroup } from '@tabler/icons-react'
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import dayjs from 'dayjs'
 import { useState, type ReactNode } from 'react'
 import { useStatsYear, type StatsTotals } from '@/api/generated'
@@ -57,16 +57,16 @@ export function StatisticsPage() {
       ) : (
         <SimpleGrid cols={1} spacing="xl">
           <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }}>
-            <StatCard label="Occupancy" value={`${t.occupancy}%`} hint={hint('occupancy')} icon={IconBed} />
-            <StatCard label="Nights sold" value={t.nights} hint={hint('nights', `${t.stays} stays`)} icon={IconMoon} />
-            <StatCard label="Price per night" value={money(t.avgPrice)} hint={hint('avgPrice')} icon={IconReceipt} />
-            <StatCard label="Income" value={money(t.income)} hint={hint('income')} icon={IconCash} />
+            <StatCard label="Occupancy" value={`${t.occupancy}%`} hint={hint('occupancy')} />
+            <StatCard label="Nights sold" value={t.nights} hint={hint('nights', `${t.stays} stays`)} />
+            <StatCard label="Price per night" value={money(t.avgPrice)} hint={hint('avgPrice')} />
+            <StatCard label="Income" value={money(t.income)} hint={hint('income')} />
           </SimpleGrid>
 
           <SimpleGrid cols={{ base: 1, md: 2 }}>
             <Paper withBorder p="md">
               <Text fw={600} mb="xs">Occupancy by month (%)</Text>
-              <BarChart h={240} data={months} dataKey="month" series={[{ name: 'Occupancy', color: SERIES.booking }]}
+              <BarChart h={240} data={months} dataKey="month" series={[{ name: 'Occupancy', color: SERIES.occupancy }]}
                 valueFormatter={(v) => `${v}%`} gridAxis="y" yAxisProps={{ domain: [0, 100], width: 45 }} barProps={{ radius: [4, 4, 0, 0] }} />
             </Paper>
             <Paper withBorder p="md">
@@ -116,10 +116,10 @@ export function StatisticsPage() {
 
           <Section title="Guests">
             <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} mb="md">
-              <StatCard label="Guests" value={t.guests} hint={`${t.returningGuests} came back`} icon={IconUsers} />
-              <StatCard label="Average stay (nights)" value={t.avgStayNights.toFixed(1)} hint={hint('avgStayNights')} icon={IconMoon} />
-              <StatCard label="Group size (people)" value={t.avgPeople.toFixed(1)} icon={IconUsersGroup} />
-              <StatCard label="From Booking.com" value={`${t.bookingShareStays}%`} hint={`${t.bookingShareIncome}% of income`} icon={IconBrandBooking} />
+              <StatCard label="Guests" value={t.guests} hint={`${t.returningGuests} came back`} />
+              <StatCard label="Average stay (nights)" value={t.avgStayNights.toFixed(1)} hint={hint('avgStayNights')} />
+              <StatCard label="Group size (people)" value={t.avgPeople.toFixed(1)} />
+              <StatCard label="From Booking.com" value={`${t.bookingShareStays}%`} hint={`${t.bookingShareIncome}% of income`} />
             </SimpleGrid>
             <CountryTable countries={data.countries} />
           </Section>

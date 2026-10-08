@@ -1,0 +1,44 @@
+/* App-wide polish on top of the Mantine theme (see theme.ts). */
+
+body {
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .mantine-Title-root {
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.mantine-Paper-root {
+  background-color: var(--app-panel);
+}
+
+/* Sidebar: thin accent bar on the current page instead of a filled block. */
+.mantine-NavLink-root {
+  border-radius: var(--mantine-radius-sm);
+  border-left: 2px solid transparent;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.mantine-NavLink-root[data-active] {
+  border-left-color: var(--mantine-primary-color-filled);
+  font-weight: 600;
+}
+
+/* Dot badges read as "● text": no outline. */
+.mantine-Badge-root[data-variant='dot'] {
+  border: 0;
+  background: transparent;
+  padding-inline: 0;
+}
+
+.mantine-Button-root,
+.mantine-ActionIcon-root,
+.mantine-Table-tr {
+  transition: background-color 150ms ease, color 150ms ease, transform 100ms ease;
+}
+
+.mantine-AppShell-header,
+.mantine-AppShell-navbar {
+  background-color: var(--mantine-color-body);
+}

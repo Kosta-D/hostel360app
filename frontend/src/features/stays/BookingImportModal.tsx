@@ -1,5 +1,5 @@
 import { Alert, Button, FileInput, List, Modal, SimpleGrid, Stack, Text } from '@mantine/core'
-import { IconBan, IconCheck, IconCopy, IconFileSpreadsheet } from '@tabler/icons-react'
+import { IconFileSpreadsheet } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useImportBooking, type BookingImportResult } from '@/api/generated'
 import { StatCard } from '@/shared/StatCard'
@@ -32,12 +32,12 @@ export function BookingImportModal({ opened, onClose }: { opened: boolean; onClo
       {result ? (
         <Stack>
           <SimpleGrid cols={{ base: 1, xs: 3 }}>
-            <StatCard label="Imported" value={result.imported} icon={IconCheck} />
-            <StatCard label="Already in the app" value={result.alreadyInApp} icon={IconCopy} />
-            <StatCard label="Cancelled or no-show" value={result.notImported} icon={IconBan} />
+            <StatCard label="Imported" value={result.imported} />
+            <StatCard label="Already in the app" value={result.alreadyInApp} />
+            <StatCard label="Cancelled or no-show" value={result.notImported} />
           </SimpleGrid>
           {result.shortened.length > 0 && (
-            <Alert color="blue" title="Ended early (the next guest got the room)">
+            <Alert color="ink" title="Ended early (the next guest got the room)">
               <List size="sm">{result.shortened.map((s) => <List.Item key={s}>{s}</List.Item>)}</List>
             </Alert>
           )}

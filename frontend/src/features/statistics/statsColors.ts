@@ -1,6 +1,7 @@
-/** Categorical series colors (validated slots 1-3), stepped for light and dark mode. */
+/** Chart colors: the forest accent plus two related muted tones (theme.ts). */
 export const SERIES = {
-  booking: 'light-dark(#2a78d6, #3987e5)',
-  direct: 'light-dark(#eb6834, #d95926)',
-  longTerm: 'light-dark(#1baf7a, #199e70)',
+  occupancy: 'forest.6',
+  booking: 'ink.5',
+  direct: 'forest.6',
+  longTerm: 'clay.4',
 }
