@@ -13,4 +13,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             where e.date < :to and (e.date >= :from or (e.repeatMonthly = true and (e.repeatUntil is null or e.repeatUntil >= :from)))
             order by e.date, e.id""")
     List<Expense> findCounting(LocalDate from, LocalDate to);
+
+    boolean existsByCurrency(String currency);
 }

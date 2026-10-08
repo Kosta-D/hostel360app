@@ -45,4 +45,6 @@ public interface StayRepository extends JpaRepository<Stay, Long> {
     boolean existsByGuestId(Long guestId);
 
     boolean existsByRoomId(Long roomId);
+
+    boolean existsByCurrency(String currency);
 }

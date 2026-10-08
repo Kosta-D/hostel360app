@@ -32,14 +32,6 @@ export const StayRequestSource = {
   DIRECT: 'DIRECT',
 } as const;
 
-export type StayRequestCurrency = typeof StayRequestCurrency[keyof typeof StayRequestCurrency];
-
-
-export const StayRequestCurrency = {
-  EUR: 'EUR',
-  RSD: 'RSD',
-} as const;
-
 export type StayRequestPaymentStatus = typeof StayRequestPaymentStatus[keyof typeof StayRequestPaymentStatus];
 
 
@@ -76,7 +68,8 @@ export interface StayRequest {
   checkOut?: string;
   /** @minimum 0 */
   amount: number;
-  currency: StayRequestCurrency;
+  /** @minLength 1 */
+  currency: string;
   paymentStatus: StayRequestPaymentStatus;
   /**
      * @minLength 0
@@ -94,14 +87,6 @@ export type StaySource = typeof StaySource[keyof typeof StaySource] | null;
 export const StaySource = {
   BOOKING: 'BOOKING',
   DIRECT: 'DIRECT',
-} as const;
-
-export type StayCurrency = typeof StayCurrency[keyof typeof StayCurrency];
-
-
-export const StayCurrency = {
-  EUR: 'EUR',
-  RSD: 'RSD',
 } as const;
 
 export type StayPaymentStatus = typeof StayPaymentStatus[keyof typeof StayPaymentStatus];
@@ -156,8 +141,9 @@ export interface Stay {
      */
   nights?: number | null;
   amount: number;
-  currency: StayCurrency;
-  eurToRsd: number;
+  currency: string;
+  /** Units of the currency per 1 EUR when saved */
+  rate: number;
   /** Amount converted to EUR with the saved rate */
   amountEur: number;
   paymentStatus: StayPaymentStatus;
@@ -169,13 +155,16 @@ export interface Stay {
 export interface Settings {
   /** @minLength 1 */
   hostelName: string;
-  /** @minimum 0.0001 */
-  eurToRsd: number;
   /**
      * @minimum 0
      * @maximum 100
      */
   bookingCommission: number;
+  /**
+     * Totals are also shown in this currency; empty for EUR only
+     * @nullable
+     */
+  displayCurrency?: string | null;
 }
 
 export type RoomRequestStatus = typeof RoomRequestStatus[keyof typeof RoomRequestStatus];
@@ -289,20 +278,13 @@ export const ExpenseRequestCategory = {
   OTHER: 'OTHER',
 } as const;
 
-export type ExpenseRequestCurrency = typeof ExpenseRequestCurrency[keyof typeof ExpenseRequestCurrency];
-
-
-export const ExpenseRequestCurrency = {
-  EUR: 'EUR',
-  RSD: 'RSD',
-} as const;
-
 export interface ExpenseRequest {
   date: string;
   category: ExpenseRequestCategory;
   /** @minimum 0 */
   amount: number;
-  currency: ExpenseRequestCurrency;
+  /** @minLength 1 */
+  currency: string;
   /**
      * @minLength 0
      * @maxLength 500
@@ -329,21 +311,14 @@ export const ExpenseCategory = {
   OTHER: 'OTHER',
 } as const;
 
-export type ExpenseCurrency = typeof ExpenseCurrency[keyof typeof ExpenseCurrency];
-
-
-export const ExpenseCurrency = {
-  EUR: 'EUR',
-  RSD: 'RSD',
-} as const;
-
 export interface Expense {
   id: number;
   date: string;
   category: ExpenseCategory;
   amount: number;
-  currency: ExpenseCurrency;
-  eurToRsd: number;
+  currency: string;
+  /** Units of the currency per 1 EUR when saved */
+  rate: number;
   amountEur: number;
   /** @nullable */
   note?: string | null;
@@ -353,6 +328,30 @@ export interface Expense {
      * @nullable
      */
   repeatUntil?: string | null;
+}
+
+export interface CurrencyRequest {
+  /**
+     * @minLength 1
+     * @pattern [A-Za-z]{3}
+     */
+  code: string;
+  /**
+     * @minLength 0
+     * @maxLength 40
+     */
+  name: string;
+  /** @minimum 0 */
+  rate: number;
+  active: boolean;
+}
+
+export interface Currency {
+  code: string;
+  name: string;
+  rate: number;
+  active: boolean;
+  inUse: boolean;
 }
 
 export interface BookingImportResult {
@@ -509,14 +508,6 @@ export interface MonthSummary {
   arrivals: number;
 }
 
-export type UnpaidItemCurrency = typeof UnpaidItemCurrency[keyof typeof UnpaidItemCurrency];
-
-
-export const UnpaidItemCurrency = {
-  EUR: 'EUR',
-  RSD: 'RSD',
-} as const;
-
 /**
  * Short stays only
  * @nullable
@@ -548,7 +539,7 @@ export interface UnpaidItem {
      */
   month?: string | null;
   amount: number;
-  currency: UnpaidItemCurrency;
+  currency: string;
   amountEur: number;
   /**
      * Short stays only
@@ -1558,6 +1549,129 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getDeleteExpenseMutationOptions(options), queryClient);
     }
 
+export const updateCurrency = (
+    code: string,
+    currencyRequest: CurrencyRequest,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Currency>(
+      {url: `/api/currencies/${code}`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: currencyRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getUpdateCurrencyMutationKey = () => ['updateCurrency'] as const;
+
+export const getUpdateCurrencyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCurrency>>, TError,UpdateCurrencyMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCurrency>>, TError,UpdateCurrencyMutationVariables, TContext> => {
+
+const mutationKey = getUpdateCurrencyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCurrency>>, UpdateCurrencyMutationVariables> = (props) => {
+          const {code,data} = props ?? {};
+
+          return  updateCurrency(code,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCurrencyMutationResult = NonNullable<Awaited<ReturnType<typeof updateCurrency>>>
+    export type UpdateCurrencyMutationBody = CurrencyRequest
+    export type UpdateCurrencyMutationError = unknown
+    export type UpdateCurrencyMutationVariables = {code: string;data: CurrencyRequest}
+
+    export const useUpdateCurrency = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCurrency>>, TError,UpdateCurrencyMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateCurrency>>,
+        TError,
+        UpdateCurrencyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateCurrencyMutationOptions(options), queryClient);
+    }
+
+export const deleteCurrency = (
+    code: string,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<void>(
+      {url: `/api/currencies/${code}`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeleteCurrencyMutationKey = () => ['deleteCurrency'] as const;
+
+export const getDeleteCurrencyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCurrency>>, TError,DeleteCurrencyMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCurrency>>, TError,DeleteCurrencyMutationVariables, TContext> => {
+
+const mutationKey = getDeleteCurrencyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCurrency>>, DeleteCurrencyMutationVariables> = (props) => {
+          const {code} = props ?? {};
+
+          return  deleteCurrency(code,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCurrencyMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCurrency>>>
+
+    export type DeleteCurrencyMutationError = unknown
+    export type DeleteCurrencyMutationVariables = {code: string}
+
+    export const useDeleteCurrency = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCurrency>>, TError,DeleteCurrencyMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCurrency>>,
+        TError,
+        DeleteCurrencyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteCurrencyMutationOptions(options), queryClient);
+    }
+
 export const listStays = (
     params?: ListStaysParams,
  options?: SecondParameter<typeof http>,signal?: AbortSignal
@@ -2521,6 +2635,155 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getStopRepeatingMutationOptions(options), queryClient);
+    }
+
+export const listCurrencies = (
+
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Currency[]>(
+      {url: `/api/currencies`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListCurrenciesQueryKey = () => {
+    return [
+    `/api/currencies`
+    ] as const;
+    }
+
+
+export const getListCurrenciesQueryOptions = <TData = Awaited<ReturnType<typeof listCurrencies>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCurrencies>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCurrenciesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCurrencies>>> = ({ signal }) => listCurrencies(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCurrencies>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListCurrenciesQueryResult = NonNullable<Awaited<ReturnType<typeof listCurrencies>>>
+export type ListCurrenciesQueryError = unknown
+
+
+export function useListCurrencies<TData = Awaited<ReturnType<typeof listCurrencies>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCurrencies>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCurrencies>>,
+          TError,
+          Awaited<ReturnType<typeof listCurrencies>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCurrencies<TData = Awaited<ReturnType<typeof listCurrencies>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCurrencies>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCurrencies>>,
+          TError,
+          Awaited<ReturnType<typeof listCurrencies>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCurrencies<TData = Awaited<ReturnType<typeof listCurrencies>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCurrencies>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListCurrencies<TData = Awaited<ReturnType<typeof listCurrencies>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCurrencies>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListCurrenciesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const createCurrency = (
+    currencyRequest: CurrencyRequest,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Currency>(
+      {url: `/api/currencies`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: currencyRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateCurrencyMutationKey = () => ['createCurrency'] as const;
+
+export const getCreateCurrencyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCurrency>>, TError,CreateCurrencyMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCurrency>>, TError,CreateCurrencyMutationVariables, TContext> => {
+
+const mutationKey = getCreateCurrencyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCurrency>>, CreateCurrencyMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCurrency(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCurrencyMutationResult = NonNullable<Awaited<ReturnType<typeof createCurrency>>>
+    export type CreateCurrencyMutationBody = CurrencyRequest
+    export type CreateCurrencyMutationError = unknown
+    export type CreateCurrencyMutationVariables = {data: CurrencyRequest}
+
+    export const useCreateCurrency = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCurrency>>, TError,CreateCurrencyMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createCurrency>>,
+        TError,
+        CreateCurrencyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCurrencyMutationOptions(options), queryClient);
     }
 
 export const login = (

@@ -2,10 +2,10 @@ import { Button, Checkbox, Group, Input, NumberInput, SegmentedControl, Select, 
 import { DatePickerInput, MonthPickerInput } from '@mantine/dates'
 import { useForm } from '@mantine/form'
 import dayjs from 'dayjs'
-import { useGetSettings, useListGuests, useListRooms, type Stay, type StayRequest } from '@/api/generated'
+import { useListGuests, useListRooms, type Stay, type StayRequest } from '@/api/generated'
 import { COUNTRIES } from '@/shared/countries'
+import { CurrencyPicker, EurHint } from '@/shared/currency'
 import { ISO, addDays, diffDays } from '@/shared/dates'
-import { money } from '@/shared/format'
 import { PAYMENT, SOURCE, toOptions } from './stayLabels'
 
 /** Values a new stay can start from (e.g. a room and day clicked in the calendar). */
@@ -25,7 +25,7 @@ type Values = {
   indefinite: boolean
   people: number
   amount: number | string
-  currency: 'EUR' | 'RSD'
+  currency: string
   paymentStatus: StayRequest['paymentStatus']
   note: string
 }
@@ -68,7 +68,6 @@ interface Props { stay?: Stay; defaults?: StayDefaults; saving: boolean; onSubmi
 export function StayForm({ stay, defaults, saving, onSubmit }: Props) {
   const { data: rooms = [] } = useListRooms()
   const { data: guests = [] } = useListGuests()
-  const { data: settings } = useGetSettings()
 
   const form = useForm<Values>({
     initialValues: initialValues(stay, defaults),
@@ -144,12 +143,10 @@ export function StayForm({ stay, defaults, saving, onSubmit }: Props) {
           <NumberInput label={v.longTerm ? 'Monthly rent' : 'Total amount'} min={0} decimalScale={2} thousandSeparator="."
             decimalSeparator="," {...form.getInputProps('amount')} />
           <Input.Wrapper label="Currency">
-            <SegmentedControl fullWidth data={['EUR', 'RSD']} value={v.currency} onChange={(x) => form.setFieldValue('currency', x as Values['currency'])} />
+            <CurrencyPicker value={v.currency} onChange={(x) => form.setFieldValue('currency', x)} />
           </Input.Wrapper>
         </Group>
-        {v.currency === 'RSD' && Number(v.amount) > 0 && settings && (
-          <Text size="xs" c="dimmed" mt={-8}>≈ {money(Number(v.amount) / settings.eurToRsd)} at 1 EUR = {settings.eurToRsd} RSD</Text>
-        )}
+        <EurHint amount={Number(v.amount)} currency={v.currency} />
 
         {v.longTerm ? (
           <Text size="xs" c="dimmed" mt={-8}>Rent is marked paid month by month in Finance → Unpaid.</Text>

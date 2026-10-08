@@ -1,7 +1,7 @@
 package com.hostel360.finance;
 
 import com.hostel360.common.BaseEntity;
-import com.hostel360.common.Currency;
+import com.hostel360.common.Money;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -21,16 +21,16 @@ public class Expense extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ExpenseCategory category;
     private BigDecimal amount;
-    @Enumerated(EnumType.STRING)
-    private Currency currency;
-    private BigDecimal eurToRsd;
+    private String currency;
+    /** Units of {@code currency} per 1 EUR when the amount was saved. */
+    private BigDecimal rate;
     private String note;
     private boolean repeatMonthly;
     /** First day of the last month a repeating expense counts in; empty while it keeps repeating. */
     private LocalDate repeatUntil;
 
     public BigDecimal amountEur() {
-        return currency.toEur(amount, eurToRsd);
+        return Money.toEur(amount, rate);
     }
 
     /** Whether this expense counts in the given month. */

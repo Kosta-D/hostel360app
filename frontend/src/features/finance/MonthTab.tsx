@@ -3,14 +3,16 @@ import type { MonthSummary } from '@/api/generated'
 import { money } from '@/shared/format'
 import { StatCard } from '@/shared/StatCard'
 import { useGetSettings } from '@/api/generated'
+import { useDisplayCurrency } from '@/shared/useDisplayCurrency'
 import { CATEGORY } from './financeLabels'
 import { Eur } from './Eur'
 
 /** One month's profit and loss: income by source, costs by category, and the profit. */
 export function MonthTab({ summary }: { summary?: MonthSummary }) {
   const { data: settings } = useGetSettings()
+  const display = useDisplayCurrency()
   if (!summary) return <Text c="dimmed" size="sm">Loading…</Text>
-  const rsd = (v: number) => (settings ? money(v * settings.eurToRsd, 'RSD') : undefined)
+  const also = (v: number) => display?.show(v)
 
   const income: [string, number][] = [
     ['Booking.com', summary.booking],
@@ -41,9 +43,9 @@ export function MonthTab({ summary }: { summary?: MonthSummary }) {
   return (
     <>
       <SimpleGrid cols={{ base: 1, sm: 3 }} mb="lg">
-        <StatCard label="Income" value={money(summary.income)} hint={`${summary.arrivals} arrivals · ${rsd(summary.income) ?? ''}`} />
-        <StatCard label="Costs" value={money(summary.costs)} hint={rsd(summary.costs)} />
-        <StatCard label="Profit" value={money(summary.profit)} hint={rsd(summary.profit)} />
+        <StatCard label="Income" value={money(summary.income)} hint={`${summary.arrivals} arrivals · ${also(summary.income) ?? ''}`} />
+        <StatCard label="Costs" value={money(summary.costs)} hint={also(summary.costs)} />
+        <StatCard label="Profit" value={money(summary.profit)} hint={also(summary.profit)} />
       </SimpleGrid>
       <SimpleGrid cols={{ base: 1, md: 2 }}>
         <Paper withBorder p="md">

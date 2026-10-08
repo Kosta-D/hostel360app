@@ -1,7 +1,8 @@
-import { Button, Group, NumberInput, SegmentedControl, Select, Stack, Switch, Textarea } from '@mantine/core'
+import { Button, Group, Input, NumberInput, Select, Stack, Switch, Textarea } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { useForm } from '@mantine/form'
 import type { Expense, ExpenseRequest } from '@/api/generated'
+import { CurrencyPicker, EurHint } from '@/shared/currency'
 import { today } from '@/shared/dates'
 import { CATEGORY_OPTIONS } from './financeLabels'
 
@@ -18,10 +19,13 @@ export function ExpenseForm({ expense, saving, onSubmit }: { expense?: Expense; 
       <Stack>
         <DateInput label="Date" valueFormat="D.M.YYYY" {...form.getInputProps('date')} />
         <Select label="Category" data={CATEGORY_OPTIONS} allowDeselect={false} searchable {...form.getInputProps('category')} />
-        <Group grow align="flex-end">
+        <Group grow align="flex-start">
           <NumberInput label="Amount" min={0} decimalScale={2} thousandSeparator="." decimalSeparator="," data-autofocus {...form.getInputProps('amount')} />
-          <SegmentedControl data={['EUR', 'RSD']} value={form.values.currency} onChange={(v) => form.setFieldValue('currency', v as ExpenseRequest['currency'])} />
+          <Input.Wrapper label="Currency">
+            <CurrencyPicker value={form.values.currency} onChange={(v) => form.setFieldValue('currency', v)} />
+          </Input.Wrapper>
         </Group>
+        <EurHint amount={form.values.amount} currency={form.values.currency} />
         <Textarea label="Note" placeholder="Optional" autosize minRows={2} {...form.getInputProps('note')} />
         <Switch label="Repeats every month" description="For fixed costs like internet or the accountant"
           {...form.getInputProps('repeatMonthly', { type: 'checkbox' })} />

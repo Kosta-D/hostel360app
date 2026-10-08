@@ -93,11 +93,48 @@ class ApiTest {
     }
 
     @Test
-    void updatesExchangeRate() throws Exception {
-        mvc.perform(authed(get("/api/settings"))).andExpect(jsonPath("$.eurToRsd").value(117.4));
-        mvc.perform(authed(put("/api/settings")).content("{\"hostelName\":\"Hostel 360\",\"eurToRsd\":117.2,\"bookingCommission\":15}"))
+    void settingsShowTotalsAlsoInRsd() throws Exception {
+        mvc.perform(authed(get("/api/settings"))).andExpect(jsonPath("$.displayCurrency").value("RSD"));
+        mvc.perform(authed(put("/api/settings")).content("{\"hostelName\":\"Hostel 360\",\"bookingCommission\":15,\"displayCurrency\":\"XYZ\"}"))
+                .andExpect(status().isConflict());
+        mvc.perform(authed(put("/api/settings")).content("{\"hostelName\":\"Hostel 360\",\"bookingCommission\":15,\"displayCurrency\":\"RSD\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.eurToRsd").value(117.2));
+                .andExpect(jsonPath("$.hostelName").value("Hostel 360"));
+    }
+
+    @Test
+    void managesOwnCurrencies() throws Exception {
+        mvc.perform(authed(get("/api/currencies")))
+                .andExpect(jsonPath("$[0].code").value("EUR"))
+                .andExpect(jsonPath("$[?(@.code == 'RSD')].rate").value(117.4));
+        mvc.perform(authed(put("/api/currencies/EUR")).content("{\"code\":\"EUR\",\"name\":\"Euro\",\"rate\":2,\"active\":true}"))
+                .andExpect(status().isConflict());
+
+        mvc.perform(authed(post("/api/currencies")).content("{\"code\":\"huf\",\"name\":\"Forint\",\"rate\":400,\"active\":true}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value("HUF"))
+                .andExpect(jsonPath("$.inUse").value(false));
+        mvc.perform(authed(post("/api/currencies")).content("{\"code\":\"HUF\",\"name\":\"Forint\",\"rate\":400,\"active\":true}"))
+                .andExpect(status().isConflict());
+
+        // A stay in HUF keeps the rate it was saved with, even after the rate changes.
+        var created = mvc.perform(authed(post("/api/stays")).content(stay(roomId(20), "Gábor Kiss", 1, false, "2031-03-01", "2031-03-03", "HUF", 20000)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.rate").value(400))
+                .andExpect(jsonPath("$.amountEur").value(50.0))
+                .andReturn().getResponse().getContentAsString();
+        var stayId = json.readTree(created).get("id").asLong();
+        mvc.perform(authed(put("/api/currencies/HUF")).content("{\"code\":\"HUF\",\"name\":\"Forint\",\"rate\":500,\"active\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inUse").value(true));
+        mvc.perform(authed(get("/api/stays/" + stayId))).andExpect(jsonPath("$.amountEur").value(50.0));
+
+        // Switched off: no new amounts in it, and it can't be deleted while used.
+        mvc.perform(authed(post("/api/expenses")).content("{\"date\":\"2031-03-01\",\"category\":\"OTHER\",\"amount\":1000,\"currency\":\"HUF\",\"repeatMonthly\":false}"))
+                .andExpect(status().isConflict());
+        mvc.perform(authed(delete("/api/currencies/HUF"))).andExpect(status().isConflict());
+        mvc.perform(authed(delete("/api/stays/" + stayId))).andExpect(status().isNoContent());
+        mvc.perform(authed(delete("/api/currencies/HUF"))).andExpect(status().isNoContent());
     }
 
     long roomId(int number) throws Exception {

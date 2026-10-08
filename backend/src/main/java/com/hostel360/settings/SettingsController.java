@@ -1,6 +1,9 @@
 package com.hostel360.settings;
 
+import com.hostel360.common.BusinessException;
 import com.hostel360.common.NotFoundException;
+import com.hostel360.currency.Currency;
+import com.hostel360.currency.CurrencyRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -18,12 +21,15 @@ import java.math.BigDecimal;
 public class SettingsController {
     private static final long ID = 1L;
     private final SettingsRepository repo;
+    private final CurrencyRepository currencies;
 
     @io.swagger.v3.oas.annotations.media.Schema(name = "Settings")
-    public record SettingsDto(@NotBlank String hostelName, @NotNull @DecimalMin("0.0001") BigDecimal eurToRsd,
-                              @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal bookingCommission) {
+    public record SettingsDto(@NotBlank String hostelName,
+                              @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal bookingCommission,
+                              @io.swagger.v3.oas.annotations.media.Schema(nullable = true, description = "Totals are also shown in this currency; empty for EUR only")
+                              String displayCurrency) {
         static SettingsDto from(Settings s) {
-            return new SettingsDto(s.getHostelName(), s.getEurToRsd(), s.getBookingCommission());
+            return new SettingsDto(s.getHostelName(), s.getBookingCommission(), s.getDisplayCurrency());
         }
     }
 
@@ -37,8 +43,12 @@ public class SettingsController {
     public SettingsDto updateSettings(@Valid @RequestBody SettingsDto dto) {
         var s = load();
         s.setHostelName(dto.hostelName());
-        s.setEurToRsd(dto.eurToRsd());
         s.setBookingCommission(dto.bookingCommission());
+        var display = dto.displayCurrency() == null || dto.displayCurrency().isBlank() || dto.displayCurrency().equals(Currency.EUR)
+                ? null : dto.displayCurrency();
+        if (display != null && !currencies.findById(display).map(Currency::isActive).orElse(false))
+            throw new BusinessException("Choose a currency from the list in Settings.");
+        s.setDisplayCurrency(display);
         return SettingsDto.from(s);
     }
 

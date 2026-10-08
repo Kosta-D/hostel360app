@@ -14,8 +14,8 @@ public class Settings {
     @Id
     private Long id;
     private String hostelName;
-    /** How many RSD one EUR buys; the manager updates it when the rate changes. */
-    private BigDecimal eurToRsd;
+    /** Totals are also shown in this currency; empty for EUR only. */
+    private String displayCurrency;
     /** Booking.com commission in percent. */
     private BigDecimal bookingCommission;
 }
