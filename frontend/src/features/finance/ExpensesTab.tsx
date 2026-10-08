@@ -64,7 +64,7 @@ export function ExpensesTab({ month, months }: { month: string; months?: MonthSu
                     </Table.Td>
                     <Table.Td ta="right" style={{ whiteSpace: 'nowrap' }}>
                       {money(e.amount, e.currency)}
-                      {e.currency === 'RSD' && <Text size="xs" c="dimmed">{money(e.amountEur)}</Text>}
+                      {e.currency !== 'EUR' && <Text size="xs" c="dimmed">{money(e.amountEur)}</Text>}
                     </Table.Td>
                     <Table.Td>
                       <Menu position="bottom-end">

@@ -1,7 +1,7 @@
 package com.hostel360.stay;
 
 import com.hostel360.common.BaseEntity;
-import com.hostel360.common.Currency;
+import com.hostel360.common.Money;
 import com.hostel360.guest.Guest;
 import com.hostel360.room.Room;
 import com.hostel360.stay.StayEnums.PaymentStatus;
@@ -38,10 +38,9 @@ public class Stay extends BaseEntity {
     private LocalDate checkOut;
     /** Total for a short stay, monthly rent for a long-term one. */
     private BigDecimal amount;
-    @Enumerated(EnumType.STRING)
-    private Currency currency;
-    /** Exchange rate when the amount was saved. */
-    private BigDecimal eurToRsd;
+    private String currency;
+    /** Units of {@code currency} per 1 EUR when the amount was saved. */
+    private BigDecimal rate;
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus = PaymentStatus.NOT_PAID;
     @Enumerated(EnumType.STRING)
@@ -53,7 +52,7 @@ public class Stay extends BaseEntity {
     private String bookingRef;
 
     public BigDecimal amountEur() {
-        return currency.toEur(amount, eurToRsd);
+        return Money.toEur(amount, rate);
     }
 
     /** Nights of this stay inside [from, to); an open-ended stay runs through {@code to}. */

@@ -2,6 +2,7 @@ package com.hostel360.stay;
 
 import com.hostel360.common.BusinessException;
 import com.hostel360.common.NotFoundException;
+import com.hostel360.currency.CurrencyRepository;
 import com.hostel360.guest.Guest;
 import com.hostel360.guest.GuestRepository;
 import com.hostel360.room.RoomRepository;
@@ -28,6 +29,7 @@ public class StayService {
     private final RoomRepository rooms;
     private final GuestRepository guests;
     private final SettingsRepository settings;
+    private final CurrencyRepository currencies;
 
     public Stay create(StayDto.Request req) {
         var stay = new Stay();
@@ -119,8 +121,8 @@ public class StayService {
         stay.setSource(source);
         stay.setCheckIn(req.checkIn());
         stay.setCheckOut(req.checkOut());
-        if (stay.getAmount() == null || stay.getAmount().compareTo(req.amount()) != 0 || stay.getCurrency() != req.currency()) {
-            stay.setEurToRsd(settings.eurToRsd());
+        if (stay.getAmount() == null || stay.getAmount().compareTo(req.amount()) != 0 || !req.currency().equals(stay.getCurrency())) {
+            stay.setRate(currencies.rateFor(req.currency(), stay.getCurrency()));
         }
         stay.setAmount(req.amount());
         stay.setCurrency(req.currency());

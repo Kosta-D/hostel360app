@@ -1,6 +1,7 @@
 package com.hostel360.stay;
 
-import com.hostel360.common.Currency;
+import com.hostel360.currency.Currency;
+import com.hostel360.currency.CurrencyRepository;
 import com.hostel360.guest.Guest;
 import com.hostel360.guest.GuestRepository;
 import com.hostel360.room.Room;
@@ -38,6 +39,7 @@ public class BookingImportService {
     private final RoomRepository rooms;
     private final GuestRepository guests;
     private final SettingsRepository settings;
+    private final CurrencyRepository currencies;
 
     @Schema(name = "BookingImportResult")
     public record Result(int imported, int alreadyInApp, int notImported,
@@ -46,7 +48,7 @@ public class BookingImportService {
 
     public Result importExport(InputStream file) {
         var reservations = BookingExportReader.read(file);
-        var run = new Run(settings.eurToRsd(), settings.bookingCommission(), LocalDate.now());
+        var run = new Run(settings.bookingCommission(), LocalDate.now());
         reservations.stream()
                 .sorted(Comparator.comparing(Reservation::checkIn).thenComparing(Reservation::line))
                 .forEach(run::add);
@@ -54,13 +56,12 @@ public class BookingImportService {
     }
 
     private final class Run {
-        final BigDecimal rate, commission;
+        final BigDecimal commission;
         final LocalDate today;
         int imported, alreadyInApp, notImported;
         final List<String> shortened = new ArrayList<>(), problems = new ArrayList<>();
 
-        Run(BigDecimal rate, BigDecimal commission, LocalDate today) {
-            this.rate = rate;
+        Run(BigDecimal commission, LocalDate today) {
             this.commission = commission;
             this.today = today;
         }
@@ -75,11 +76,9 @@ public class BookingImportService {
                 problems.add(label + "missing dates or room type.");
                 return;
             }
-            Currency currency;
-            try {
-                currency = Currency.valueOf(r.currency());
-            } catch (IllegalArgumentException e) {
-                problems.add(label + "unknown currency " + r.currency() + ".");
+            var currency = currencies.findById(r.currency()).orElse(null);
+            if (currency == null) {
+                problems.add(label + "unknown currency " + r.currency() + ". Add it in Settings and import again.");
                 return;
             }
             int units = r.unitTypes().size();
@@ -154,8 +153,8 @@ public class BookingImportService {
             stay.setCheckIn(r.checkIn());
             stay.setCheckOut(r.checkOut());
             stay.setAmount(amount);
-            stay.setCurrency(currency);
-            stay.setEurToRsd(rate);
+            stay.setCurrency(currency.getCode());
+            stay.setRate(currency.getRate());
             stay.setStatus(status);
             // Money is collected on arrival, so anyone who has arrived has paid.
             stay.setPaymentStatus(status == StayStatus.BOOKED ? PaymentStatus.NOT_PAID : PaymentStatus.PAID);

@@ -1,6 +1,5 @@
 package com.hostel360.finance;
 
-import com.hostel360.common.Currency;
 import com.hostel360.stay.StayEnums.PaymentStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -30,7 +29,7 @@ public final class FinanceDto {
             LocalDate checkIn,
             @Schema(nullable = true) LocalDate checkOut,
             @Schema(nullable = true, description = "Rent month (first day) for long-term stays") LocalDate month,
-            BigDecimal amount, Currency currency, BigDecimal amountEur,
+            BigDecimal amount, String currency, BigDecimal amountEur,
             @Schema(nullable = true, description = "Short stays only") PaymentStatus paymentStatus) {}
 
     @Schema(name = "RentPaymentRequest")

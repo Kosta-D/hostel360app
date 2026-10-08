@@ -1,6 +1,5 @@
 package com.hostel360.stay;
 
-import com.hostel360.common.Currency;
 import com.hostel360.stay.StayEnums.PaymentStatus;
 import com.hostel360.stay.StayEnums.StaySource;
 import com.hostel360.stay.StayEnums.StayStatus;
@@ -26,7 +25,7 @@ public final class StayDto {
             @NotNull LocalDate checkIn,
             LocalDate checkOut,
             @NotNull @DecimalMin("0") BigDecimal amount,
-            @NotNull Currency currency,
+            @NotBlank String currency,
             @NotNull PaymentStatus paymentStatus,
             @Size(max = 500) String note) {
     }
@@ -44,7 +43,8 @@ public final class StayDto {
             LocalDate checkIn,
             @Schema(nullable = true, description = "Exclusive end date; empty for an open-ended long-term stay") LocalDate checkOut,
             @Schema(nullable = true, description = "Short stays only") Integer nights,
-            BigDecimal amount, Currency currency, BigDecimal eurToRsd,
+            BigDecimal amount, String currency,
+            @Schema(description = "Units of the currency per 1 EUR when saved") BigDecimal rate,
             @Schema(description = "Amount converted to EUR with the saved rate") BigDecimal amountEur,
             PaymentStatus paymentStatus, StayStatus status,
             @Schema(nullable = true) String note) {
@@ -53,10 +53,10 @@ public final class StayDto {
             var room = s.getRoom();
             var guest = s.getGuest();
             Integer nights = s.isLongTerm() || s.getCheckOut() == null ? null : (int) ChronoUnit.DAYS.between(s.getCheckIn(), s.getCheckOut());
-            var amountEur = s.getCurrency().toEur(s.getAmount(), s.getEurToRsd());
+            var amountEur = s.amountEur();
             return new Response(s.getId(), new RoomRef(room.getId(), room.getNumber(), room.getName()),
                     new GuestRef(guest.getId(), guest.getName(), guest.getCountry()), s.getPeople(), s.isLongTerm(),
-                    s.getSource(), s.getCheckIn(), s.getCheckOut(), nights, s.getAmount(), s.getCurrency(), s.getEurToRsd(),
+                    s.getSource(), s.getCheckIn(), s.getCheckOut(), nights, s.getAmount(), s.getCurrency(), s.getRate(),
                     amountEur, s.getPaymentStatus(), s.getStatus(), s.getNote());
         }
     }

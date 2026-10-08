@@ -3,7 +3,7 @@ package com.hostel360.finance;
 import com.hostel360.common.NotFoundException;
 import com.hostel360.finance.ExpenseDto.Request;
 import com.hostel360.finance.ExpenseDto.Response;
-import com.hostel360.settings.SettingsRepository;
+import com.hostel360.currency.CurrencyRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ExpenseController {
     private final ExpenseRepository repo;
-    private final SettingsRepository settings;
+    private final CurrencyRepository currencies;
 
     /** Expenses that count in the month containing {@code month}, repeating ones included. */
     @GetMapping
@@ -68,8 +68,8 @@ public class ExpenseController {
     }
 
     private void apply(Expense e, Request req) {
-        if (e.getAmount() == null || e.getAmount().compareTo(req.amount()) != 0 || e.getCurrency() != req.currency())
-            e.setEurToRsd(settings.eurToRsd());
+        if (e.getAmount() == null || e.getAmount().compareTo(req.amount()) != 0 || !req.currency().equals(e.getCurrency()))
+            e.setRate(currencies.rateFor(req.currency(), e.getCurrency()));
         e.setDate(req.date());
         e.setCategory(req.category());
         e.setAmount(req.amount());

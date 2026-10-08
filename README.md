@@ -39,7 +39,8 @@ backend/src/main/java/com/hostel360/
   common/     shared base entity, errors, currency
   config/     security and OpenAPI
   auth/       login and JWT
-  settings/   hostel name and EUR → RSD rate
+  settings/   hostel name, commission, second display currency
+  currency/   currencies and their rates (EUR is the base)
   room/       rooms module (controller, dto, entity, repository)
   guest/      guests (name, country, note)
   stay/       bookings: rules in StayService (capacity, no double booking, check-in/out)
