@@ -42,24 +42,24 @@ public class FinanceService {
         for (int m = 1; m <= 12; m++) months.put(YearMonth.of(year, m), new Totals());
 
         for (var s : active(stays.search(from, to, -1))) {
-            var eur = s.amountEur();
+            var value = s.amountPrimary();
             if (s.isLongTerm()) {
-                s.rentMonths(YearMonth.of(year, 12)).map(months::get).filter(Objects::nonNull).forEach(t -> t.longTerm = t.longTerm.add(eur));
+                s.rentMonths(YearMonth.of(year, 12)).map(months::get).filter(Objects::nonNull).forEach(t -> t.longTerm = t.longTerm.add(value));
             } else if (!s.getCheckIn().isBefore(from) && s.getCheckIn().isBefore(to)) {
                 var t = months.get(YearMonth.from(s.getCheckIn()));
                 t.arrivals++;
                 if (s.getSource() == StaySource.BOOKING) {
-                    t.booking = t.booking.add(eur);
+                    t.booking = t.booking.add(value);
                     var pct = s.getCommissionPct() != null ? s.getCommissionPct() : BigDecimal.ZERO;
-                    t.commission = t.commission.add(eur.multiply(pct).divide(HUNDRED, 4, RoundingMode.HALF_UP));
+                    t.commission = t.commission.add(value.multiply(pct).divide(HUNDRED, 4, RoundingMode.HALF_UP));
                 } else {
-                    t.direct = t.direct.add(eur);
+                    t.direct = t.direct.add(value);
                 }
             }
         }
         for (var e : expenses.findCounting(from, to))
             months.forEach((month, t) -> {
-                if (e.appliesTo(month)) t.byCategory.merge(e.getCategory(), e.amountEur(), BigDecimal::add);
+                if (e.appliesTo(month)) t.byCategory.merge(e.getCategory(), e.amountPrimary(), BigDecimal::add);
             });
         return months.entrySet().stream().map(m -> m.getValue().summary(m.getKey())).toList();
     }
@@ -102,7 +102,7 @@ public class FinanceService {
 
     private static UnpaidItem item(Stay s, LocalDate month) {
         return new UnpaidItem(s.getId(), s.getGuest().getName(), s.getRoom().getNumber(), s.getRoom().getName(), s.isLongTerm(),
-                s.getCheckIn(), s.getCheckOut(), month, s.getAmount(), s.getCurrency(), s.amountEur(),
+                s.getCheckIn(), s.getCheckOut(), month, s.getAmount(), s.getCurrency(), s.amountPrimary(),
                 s.isLongTerm() ? null : s.getPaymentStatus());
     }
 

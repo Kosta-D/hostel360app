@@ -14,8 +14,13 @@ public class Settings {
     @Id
     private Long id;
     private String hostelName;
-    /** Totals are also shown in this currency; empty for EUR only. */
-    private String displayCurrency;
     /** Booking.com commission in percent. */
     private BigDecimal bookingCommission;
+    /** All totals are in this currency. */
+    private String primaryCurrency;
+    /** Optional second currency (totals are also shown in it) and third one; rates are units per 1 primary. */
+    private String secondCurrency;
+    private BigDecimal secondRate;
+    private String thirdCurrency;
+    private BigDecimal thirdRate;
 }

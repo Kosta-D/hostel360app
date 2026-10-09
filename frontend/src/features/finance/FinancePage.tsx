@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import { useState } from 'react'
 import { useFinanceYear, useListUnpaid } from '@/api/generated'
 import { ISO } from '@/shared/dates'
+import { primaryCurrency } from '@/shared/format'
 import { PageHeader } from '@/shared/PageHeader'
 import { ExpensesTab } from './ExpensesTab'
 import { MonthTab } from './MonthTab'
@@ -33,7 +34,7 @@ export function FinancePage() {
 
   return (
     <>
-      <PageHeader title="Finance" description="Income counts on the arrival date. All totals in EUR." action={period} />
+      <PageHeader title="Finance" description={`Income counts on the arrival date. All totals in ${primaryCurrency()}.`} action={period} />
       <Tabs value={tab} onChange={setTab} keepMounted={false}>
         <Tabs.List mb="md">
           <Tabs.Tab value="month">Month</Tabs.Tab>

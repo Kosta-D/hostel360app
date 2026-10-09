@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-/** Finance report shapes. All totals are in EUR. */
+/** Finance report shapes. All totals are in the primary currency. */
 public final class FinanceDto {
     private FinanceDto() {}
 
@@ -29,7 +29,7 @@ public final class FinanceDto {
             LocalDate checkIn,
             @Schema(nullable = true) LocalDate checkOut,
             @Schema(nullable = true, description = "Rent month (first day) for long-term stays") LocalDate month,
-            BigDecimal amount, String currency, BigDecimal amountEur,
+            BigDecimal amount, String currency, BigDecimal amountPrimary,
             @Schema(nullable = true, description = "Short stays only") PaymentStatus paymentStatus) {}
 
     @Schema(name = "RentPaymentRequest")

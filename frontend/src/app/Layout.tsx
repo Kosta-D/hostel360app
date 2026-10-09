@@ -3,6 +3,7 @@ import { useDisclosure } from '@mantine/hooks'
 import { IconLogout, IconMoon, IconSun } from '@tabler/icons-react'
 import { Navigate, NavLink as RouterLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useGetSettings } from '@/api/generated'
+import { setPrimaryCurrency } from '@/shared/format'
 import { auth } from './auth'
 import { NAV } from './nav'
 
@@ -14,6 +15,7 @@ export function Layout() {
   const { data: settings } = useGetSettings({ query: { enabled: !!auth.token() } })
 
   if (!auth.token()) return <Navigate to="/login" replace />
+  if (settings) setPrimaryCurrency(settings.primaryCurrency)
 
   const logout = () => { auth.clear(); navigate('/login') }
 

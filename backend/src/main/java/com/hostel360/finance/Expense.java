@@ -22,15 +22,15 @@ public class Expense extends BaseEntity {
     private ExpenseCategory category;
     private BigDecimal amount;
     private String currency;
-    /** Units of {@code currency} per 1 EUR when the amount was saved. */
+    /** Units of {@code currency} per 1 primary currency when the amount was saved. */
     private BigDecimal rate;
     private String note;
     private boolean repeatMonthly;
     /** First day of the last month a repeating expense counts in; empty while it keeps repeating. */
     private LocalDate repeatUntil;
 
-    public BigDecimal amountEur() {
-        return Money.toEur(amount, rate);
+    public BigDecimal amountPrimary() {
+        return Money.toPrimary(amount, rate);
     }
 
     /** Whether this expense counts in the given month. */

@@ -1,12 +1,12 @@
 package com.hostel360.stay;
 
-import com.hostel360.currency.Currency;
-import com.hostel360.currency.CurrencyRepository;
+import com.hostel360.common.BusinessException;
 import com.hostel360.guest.Guest;
 import com.hostel360.guest.GuestRepository;
 import com.hostel360.room.Room;
 import com.hostel360.room.RoomRepository;
 import com.hostel360.room.RoomStatus;
+import com.hostel360.settings.CurrencyService;
 import com.hostel360.settings.SettingsRepository;
 import com.hostel360.stay.BookingExportReader.Reservation;
 import com.hostel360.stay.StayEnums.PaymentStatus;
@@ -39,7 +39,7 @@ public class BookingImportService {
     private final RoomRepository rooms;
     private final GuestRepository guests;
     private final SettingsRepository settings;
-    private final CurrencyRepository currencies;
+    private final CurrencyService currencies;
 
     @Schema(name = "BookingImportResult")
     public record Result(int imported, int alreadyInApp, int notImported,
@@ -76,9 +76,11 @@ public class BookingImportService {
                 problems.add(label + "missing dates or room type.");
                 return;
             }
-            var currency = currencies.findById(r.currency()).orElse(null);
-            if (currency == null) {
-                problems.add(label + "unknown currency " + r.currency() + ". Add it in Settings and import again.");
+            BigDecimal rate;
+            try {
+                rate = currencies.rateFor(r.currency(), null, null);
+            } catch (BusinessException e) {
+                problems.add(label + e.getMessage());
                 return;
             }
             int units = r.unitTypes().size();
@@ -103,7 +105,7 @@ public class BookingImportService {
                 }
                 int people = Math.max(1, Math.min(room.getCapacity(), peopleLeft - (units - 1 - i)));
                 peopleLeft -= people;
-                save(r, ref, room, people, shares.get(i), currency);
+                save(r, ref, room, people, shares.get(i), r.currency(), rate);
                 imported++;
             }
         }
@@ -139,7 +141,7 @@ public class BookingImportService {
             return null;
         }
 
-        private void save(Reservation r, String ref, Room room, int people, BigDecimal amount, Currency currency) {
+        private void save(Reservation r, String ref, Room room, int people, BigDecimal amount, String currency, BigDecimal rate) {
             // Departed guests are done and paid; guests who arrived before today are in the house now.
             var status = r.checkOut().isBefore(today) ? StayStatus.CHECKED_OUT
                     : r.checkIn().isBefore(today) ? StayStatus.CHECKED_IN : StayStatus.BOOKED;
@@ -153,8 +155,8 @@ public class BookingImportService {
             stay.setCheckIn(r.checkIn());
             stay.setCheckOut(r.checkOut());
             stay.setAmount(amount);
-            stay.setCurrency(currency.getCode());
-            stay.setRate(currency.getRate());
+            stay.setCurrency(currency);
+            stay.setRate(rate);
             stay.setStatus(status);
             // Money is collected on arrival, so anyone who has arrived has paid.
             stay.setPaymentStatus(status == StayStatus.BOOKED ? PaymentStatus.NOT_PAID : PaymentStatus.PAID);

@@ -6,7 +6,7 @@ import {
   useCreateExpense, useDeleteExpense, useListExpenses, useStopRepeating, useUpdateExpense, type Expense, type MonthSummary,
 } from '@/api/generated'
 import { fmtDate, fmtMonth } from '@/shared/dates'
-import { money } from '@/shared/format'
+import { money, primaryCurrency } from '@/shared/format'
 import { notify } from '@/shared/notify'
 import { ExpenseForm } from './ExpenseForm'
 import { ExpenseSummary, type Span } from './ExpenseSummary'
@@ -27,7 +27,7 @@ export function ExpensesTab({ month, months }: { month: string; months?: MonthSu
   const update = useUpdateExpense(opts('Expense saved', true))
   const remove = useDeleteExpense(opts('Expense deleted'))
   const stop = useStopRepeating(opts('It will stop repeating after this month'))
-  const total = expenses.reduce((sum, e) => sum + e.amountEur, 0)
+  const total = expenses.reduce((sum, e) => sum + e.amountPrimary, 0)
 
   const confirmDelete = (e: Expense) =>
     modals.openConfirmModal({
@@ -64,7 +64,7 @@ export function ExpensesTab({ month, months }: { month: string; months?: MonthSu
                     </Table.Td>
                     <Table.Td ta="right" style={{ whiteSpace: 'nowrap' }}>
                       {money(e.amount, e.currency)}
-                      {e.currency !== 'EUR' && <Text size="xs" c="dimmed">{money(e.amountEur)}</Text>}
+                      {e.currency !== primaryCurrency() && <Text size="xs" c="dimmed">{money(e.amountPrimary)}</Text>}
                     </Table.Td>
                     <Table.Td>
                       <Menu position="bottom-end">

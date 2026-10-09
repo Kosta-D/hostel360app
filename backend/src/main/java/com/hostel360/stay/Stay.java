@@ -39,7 +39,7 @@ public class Stay extends BaseEntity {
     /** Total for a short stay, monthly rent for a long-term one. */
     private BigDecimal amount;
     private String currency;
-    /** Units of {@code currency} per 1 EUR when the amount was saved. */
+    /** Units of {@code currency} per 1 primary currency when the amount was saved. */
     private BigDecimal rate;
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus = PaymentStatus.NOT_PAID;
@@ -51,8 +51,8 @@ public class Stay extends BaseEntity {
     /** Booking.com reservation number for imported stays. */
     private String bookingRef;
 
-    public BigDecimal amountEur() {
-        return Money.toEur(amount, rate);
+    public BigDecimal amountPrimary() {
+        return Money.toPrimary(amount, rate);
     }
 
     /** Nights of this stay inside [from, to); an open-ended stay runs through {@code to}. */

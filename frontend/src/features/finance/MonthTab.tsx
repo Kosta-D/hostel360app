@@ -3,9 +3,9 @@ import type { MonthSummary } from '@/api/generated'
 import { money } from '@/shared/format'
 import { StatCard } from '@/shared/StatCard'
 import { useGetSettings } from '@/api/generated'
-import { useDisplayCurrency } from '@/shared/useDisplayCurrency'
+import { useDisplayCurrency } from '@/shared/currencies'
 import { CATEGORY } from './financeLabels'
-import { Eur } from './Eur'
+import { Total } from './Total'
 
 /** One month's profit and loss: income by source, costs by category, and the profit. */
 export function MonthTab({ summary }: { summary?: MonthSummary }) {
@@ -29,12 +29,12 @@ export function MonthTab({ summary }: { summary?: MonthSummary }) {
         {items.map(([label, value]) => (
           <Table.Tr key={label}>
             <Table.Td>{label}</Table.Td>
-            <Table.Td ta="right"><Eur value={value} /></Table.Td>
+            <Table.Td ta="right"><Total value={value} /></Table.Td>
           </Table.Tr>
         ))}
         <Table.Tr>
           <Table.Td fw={700}>{totalLabel}</Table.Td>
-          <Table.Td ta="right"><Eur value={total} strong /></Table.Td>
+          <Table.Td ta="right"><Total value={total} strong /></Table.Td>
         </Table.Tr>
       </Table.Tbody>
     </Table>
@@ -60,7 +60,7 @@ export function MonthTab({ summary }: { summary?: MonthSummary }) {
       <Paper withBorder p="md" mt="md">
         <Group justify="space-between">
           <Title order={4}>Profit</Title>
-          <Eur value={summary.profit} strong />
+          <Total value={summary.profit} strong />
         </Group>
       </Paper>
     </>

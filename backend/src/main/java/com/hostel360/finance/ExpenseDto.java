@@ -20,12 +20,12 @@ public final class ExpenseDto {
 
     @Schema(name = "Expense")
     public record Response(Long id, LocalDate date, ExpenseCategory category, BigDecimal amount, String currency,
-                           @Schema(description = "Units of the currency per 1 EUR when saved") BigDecimal rate, BigDecimal amountEur, @Schema(nullable = true) String note,
+                           @Schema(description = "Units of the currency per 1 primary currency when saved") BigDecimal rate, BigDecimal amountPrimary, @Schema(nullable = true) String note,
                            boolean repeatMonthly,
                            @Schema(nullable = true, description = "First day of the last month a repeating expense counts in") LocalDate repeatUntil) {
         static Response from(Expense e) {
             return new Response(e.getId(), e.getDate(), e.getCategory(), e.getAmount(), e.getCurrency(), e.getRate(),
-                    e.amountEur(), e.getNote(), e.isRepeatMonthly(), e.getRepeatUntil());
+                    e.amountPrimary(), e.getNote(), e.isRepeatMonthly(), e.getRepeatUntil());
         }
     }
 }
