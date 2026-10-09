@@ -2,9 +2,8 @@ package com.hostel360.finance;
 
 import com.hostel360.common.BaseEntity;
 import com.hostel360.common.Money;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import com.hostel360.property.Property;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,6 +16,9 @@ import java.time.YearMonth;
 @Getter
 @Setter
 public class Expense extends BaseEntity {
+    /** Empty for an expense shared by all properties. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Property property;
     private LocalDate date;
     @Enumerated(EnumType.STRING)
     private ExpenseCategory category;

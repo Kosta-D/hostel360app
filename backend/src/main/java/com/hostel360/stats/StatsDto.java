@@ -25,14 +25,15 @@ public final class StatsDto {
 
     @Schema(name = "StatsMonth")
     public record Month(LocalDate month, BigDecimal occupancy, int nightsSold, int nightsAvailable,
-                        BigDecimal booking, BigDecimal direct, BigDecimal longTerm, BigDecimal avgPrice) {}
+                        BigDecimal booking, BigDecimal airbnb, BigDecimal direct, BigDecimal longTerm, BigDecimal avgPrice) {}
 
     @Schema(name = "StatsRoomMonth")
     public record RoomMonth(@Schema(description = "Share of the month the room was occupied, in percent") BigDecimal occupied,
                             @Schema(description = "A long-term tenant was in the room this month") boolean longTerm) {}
 
     @Schema(name = "StatsRoom")
-    public record Room(Long id, int number, String name, int nightsSold,
+    public record Room(Long id, int number,
+                       @Schema(description = "The apartment's name for an apartment") String name, boolean apartment, int nightsSold,
                        @Schema(description = "Short-term occupancy for the year, in percent") BigDecimal occupancy,
                        BigDecimal income, BigDecimal avgPrice, List<RoomMonth> months) {}
 

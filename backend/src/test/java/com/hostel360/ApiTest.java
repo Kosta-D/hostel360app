@@ -56,16 +56,21 @@ class ApiTest {
     void seedsTheHostelRooms() throws Exception {
         mvc.perform(authed(get("/api/rooms")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(9))
-                .andExpect(jsonPath("$[0].number").value(1))
+                .andExpect(jsonPath("$[?(@.propertyName == 'Hostel')].number").value(org.hamcrest.Matchers.contains(1, 2, 11, 12, 13, 20, 21, 22, 23)))
                 .andExpect(jsonPath("$[0].name").value("Ksenija"))
-                .andExpect(jsonPath("$[8].number").value(23))
                 .andExpect(jsonPath("$[8].floor").value(2));
+        mvc.perform(authed(get("/api/properties")))
+                .andExpect(jsonPath("$[0].name").value("Hostel"))
+                .andExpect(jsonPath("$[0].type").value("HOSTEL"))
+                .andExpect(jsonPath("$[0].bookingCommission").value(15.0))
+                .andExpect(jsonPath("$[0].airbnbCommission").value(3.0))
+                .andExpect(jsonPath("$[0].rooms").value(9));
     }
 
     @Test
     void roomCrud() throws Exception {
-        var room = Map.of("number", 101, "name", "Test room", "floor", 1, "capacity", 2, "longTerm", false, "status", "AVAILABLE");
+        var hostel = hostelId();
+        var room = Map.of("propertyId", hostel, "number", 101, "name", "Test room", "floor", 1, "capacity", 2, "longTerm", false, "status", "AVAILABLE");
         var created = mvc.perform(authed(post("/api/rooms")).content(json.writeValueAsString(room)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.number").value(101))
@@ -75,11 +80,11 @@ class ApiTest {
         mvc.perform(authed(post("/api/rooms")).content(json.writeValueAsString(room)))
                 .andExpect(status().isConflict());
         mvc.perform(authed(post("/api/rooms")).content(json.writeValueAsString(Map.of(
-                        "number", 102, "name", "Too big", "floor", 3, "capacity", 3, "longTerm", false, "status", "AVAILABLE"))))
+                        "propertyId", hostel, "number", 102, "name", "Too big", "floor", 3, "capacity", 11, "longTerm", false, "status", "AVAILABLE"))))
                 .andExpect(status().isBadRequest());
 
         mvc.perform(authed(put("/api/rooms/" + id)).content(json.writeValueAsString(
-                        Map.of("number", 101, "name", "Test room", "floor", 2, "capacity", 1, "longTerm", true, "status", "TAKEN"))))
+                        Map.of("propertyId", hostel, "number", 101, "name", "Test room", "floor", 2, "capacity", 1, "longTerm", true, "status", "TAKEN"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.floor").value(2))
                 .andExpect(jsonPath("$.longTerm").value(true));
@@ -93,7 +98,7 @@ class ApiTest {
     }
 
     String settings(String second, Object secondRate, String third, Object thirdRate) throws Exception {
-        var m = new java.util.HashMap<String, Object>(Map.of("hostelName", "Hostel 360", "bookingCommission", 15));
+        var m = new java.util.HashMap<String, Object>(Map.of("hostelName", "Hostel 360"));
         m.put("secondCurrency", second); m.put("secondRate", secondRate);
         m.put("thirdCurrency", third); m.put("thirdRate", thirdRate);
         return json.writeValueAsString(m);
@@ -120,9 +125,14 @@ class ApiTest {
                 .andExpect(status().isConflict());
     }
 
+    long hostelId() throws Exception {
+        return json.readTree(mvc.perform(authed(get("/api/properties"))).andReturn().getResponse().getContentAsString()).get(0).get("id").asLong();
+    }
+
     long roomId(int number) throws Exception {
         var body = mvc.perform(authed(get("/api/rooms"))).andReturn().getResponse().getContentAsString();
-        for (var room : json.readTree(body)) if (room.get("number").asInt() == number) return room.get("id").asLong();
+        for (var room : json.readTree(body))
+            if (room.get("number").asInt() == number && room.get("propertyName").asText().equals("Hostel")) return room.get("id").asLong();
         throw new AssertionError("no room " + number);
     }
 
@@ -220,7 +230,12 @@ class ApiTest {
     }
 
     String importBooking(byte[] file) throws Exception {
+        return importBooking(file, hostelId());
+    }
+
+    String importBooking(byte[] file, long propertyId) throws Exception {
         return mvc.perform(multipart("/api/stays/import-booking").file(new org.springframework.mock.web.MockMultipartFile("file", "export.xls", "application/vnd.ms-excel", file))
+                        .param("propertyId", String.valueOf(propertyId))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -275,6 +290,7 @@ class ApiTest {
     @Test
     void rejectsFilesThatAreNotBookingExports() throws Exception {
         mvc.perform(multipart("/api/stays/import-booking").file(new org.springframework.mock.web.MockMultipartFile("file", "x.txt", "text/plain", "hello".getBytes()))
+                        .param("propertyId", String.valueOf(hostelId()))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isConflict());
     }
@@ -376,5 +392,57 @@ class ApiTest {
                 .andExpect(jsonPath("$.countries[0].nights").value(64))
                 .andExpect(jsonPath("$.countries[1].country").value("Germany"));
         mvc.perform(authed(get("/api/stats/year/2034"))).andExpect(jsonPath("$.previous.stays").value(2));
+    }
+
+    String property(String name, String type, Integer guests) throws Exception {
+        var m = new java.util.HashMap<String, Object>(Map.of("name", name, "type", type, "bookingCommission", 15, "airbnbCommission", 3));
+        m.put("guests", guests);
+        return json.writeValueAsString(m);
+    }
+
+    @Test
+    void apartmentsAirbnbAndSharedExpenses() throws Exception {
+        var res = mvc.perform(authed(post("/api/properties")).content(property("Sea View", "APARTMENT", 4)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.guests").value(4))
+                .andReturn().getResponse().getContentAsString();
+        long apartment = json.readTree(res).get("id").asLong(), unit = json.readTree(res).get("unitId").asLong();
+        mvc.perform(authed(post("/api/properties")).content(property("sea view", "HOSTEL", null))).andExpect(status().isConflict());
+        mvc.perform(authed(put("/api/properties/" + apartment)).content(property("Sea View", "HOSTEL", null))).andExpect(status().isConflict());
+        mvc.perform(authed(post("/api/rooms")).content(json.writeValueAsString(Map.of("propertyId", apartment, "number", 2, "name", "Extra",
+                "floor", 1, "capacity", 2, "longTerm", false, "status", "AVAILABLE")))).andExpect(status().isConflict());
+
+        var airbnb = stayFrom("Italy", "AIRBNB", stay(unit, "Apt Guest", 4, false, "2035-05-10", "2035-05-12", "EUR", 200));
+        createId("/api/stays", airbnb);
+        mvc.perform(authed(post("/api/stays")).content(stay(unit, "Too Many", 5, false, "2035-06-10", "2035-06-12", "EUR", 200)))
+                .andExpect(status().isConflict());
+        mvc.perform(authed(get("/api/stays?from=2035-05-10&to=2035-05-11")))
+                .andExpect(jsonPath("$[0].room.apartment").value(true))
+                .andExpect(jsonPath("$[0].room.name").value("Sea View"))
+                .andExpect(jsonPath("$[0].source").value("AIRBNB"));
+
+        var shared = new java.util.HashMap<String, Object>(json.readValue(expense("2035-05-03", "OTHER", 40, false), Map.class));
+        createId("/api/expenses", json.writeValueAsString(shared));
+        shared.put("propertyId", apartment);
+        createId("/api/expenses", json.writeValueAsString(shared));
+        mvc.perform(authed(get("/api/expenses?month=2035-05-01")))
+                .andExpect(jsonPath("$[0].propertyId").isEmpty())
+                .andExpect(jsonPath("$[1].propertyName").value("Sea View"));
+
+        mvc.perform(authed(get("/api/finance/year/2035")))
+                .andExpect(jsonPath("$[4].airbnb").value(200.0))
+                .andExpect(jsonPath("$[4].booking").value(0))
+                .andExpect(jsonPath("$[4].commission").value(6.0))
+                .andExpect(jsonPath("$[4].expenses").value(80.0));
+        mvc.perform(authed(get("/api/stats/year/2035"))).andExpect(jsonPath("$.months[4].airbnb").value(200.0));
+
+        var file = bookingExport(new Object[]{2001d, "Apt Booking", "2036-01-03", "2036-01-05", "ok", 2d, "90 EUR", "fr", "Whatever type"});
+        org.assertj.core.api.Assertions.assertThat(json.readTree(importBooking(file, apartment)).get("imported").asInt()).isEqualTo(1);
+        mvc.perform(authed(get("/api/stays?from=2036-01-03&to=2036-01-04"))).andExpect(jsonPath("$[0].room.id").value(unit));
+
+        mvc.perform(authed(delete("/api/properties/" + apartment))).andExpect(status().isConflict());
+        var empty = json.readTree(mvc.perform(authed(post("/api/properties")).content(property("Empty Flat", "APARTMENT", 2)))
+                .andReturn().getResponse().getContentAsString()).get("id").asLong();
+        mvc.perform(authed(delete("/api/properties/" + empty))).andExpect(status().isNoContent());
     }
 }

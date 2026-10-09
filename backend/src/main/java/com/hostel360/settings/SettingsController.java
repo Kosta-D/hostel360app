@@ -23,14 +23,13 @@ public class SettingsController {
 
     @Schema(name = "Settings", description = "Rates are units of that currency per 1 primary currency.")
     public record SettingsDto(@NotBlank String hostelName,
-                              @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal bookingCommission,
                               @Schema(description = "Read-only here; change it with POST /api/settings/primary") String primaryCurrency,
                               @Schema(nullable = true) @Pattern(regexp = CODE, message = "must be 3 letters, like RSD") String secondCurrency,
                               @Schema(nullable = true) @DecimalMin(value = "0", inclusive = false) BigDecimal secondRate,
                               @Schema(nullable = true) @Pattern(regexp = CODE, message = "must be 3 letters, like USD") String thirdCurrency,
                               @Schema(nullable = true) @DecimalMin(value = "0", inclusive = false) BigDecimal thirdRate) {
         static SettingsDto from(Settings s) {
-            return new SettingsDto(s.getHostelName(), s.getBookingCommission(), s.getPrimaryCurrency(),
+            return new SettingsDto(s.getHostelName(), s.getPrimaryCurrency(),
                     s.getSecondCurrency(), s.getSecondRate(), s.getThirdCurrency(), s.getThirdRate());
         }
     }
@@ -48,7 +47,6 @@ public class SettingsController {
     public SettingsDto updateSettings(@Valid @RequestBody SettingsDto dto) {
         var s = load();
         s.setHostelName(dto.hostelName());
-        s.setBookingCommission(dto.bookingCommission());
         String second = code(dto.secondCurrency()), third = code(dto.thirdCurrency());
         BigDecimal secondRate = dto.secondRate(), thirdRate = dto.thirdRate();
         if (second == null) { second = third; secondRate = thirdRate; third = null; }

@@ -7,9 +7,7 @@ import com.hostel360.guest.GuestRepository;
 import com.hostel360.room.RoomRepository;
 import com.hostel360.room.RoomStatus;
 import com.hostel360.settings.CurrencyService;
-import com.hostel360.settings.SettingsRepository;
 import com.hostel360.stay.StayEnums.PaymentStatus;
-import com.hostel360.stay.StayEnums.StaySource;
 import com.hostel360.stay.StayEnums.StayStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,7 +26,6 @@ public class StayService {
     private final StayRepository stays;
     private final RoomRepository rooms;
     private final GuestRepository guests;
-    private final SettingsRepository settings;
     private final CurrencyService currencies;
 
     public Stay create(StayDto.Request req) {
@@ -92,11 +89,12 @@ public class StayService {
         boolean longTerm = req.longTerm();
 
         if (req.people() > room.getCapacity())
-            throw new BusinessException("Room " + room.getNumber() + " fits only " + room.getCapacity() + " person.");
+            throw new BusinessException((room.isApartment() ? room.getName() : "Room " + room.getNumber()) + " fits only "
+                    + room.getCapacity() + (room.getCapacity() == 1 ? " person." : " people."));
         if (!longTerm && req.checkOut() == null)
             throw new BusinessException("A short stay needs a departure date.");
         if (!longTerm && req.source() == null)
-            throw new BusinessException("Choose where the booking came from (Booking.com or Direct).");
+            throw new BusinessException("Choose where the booking came from (Booking.com, Airbnb or Direct).");
         if (req.checkOut() != null && !req.checkOut().isAfter(req.checkIn()))
             throw new BusinessException("Departure must be after arrival.");
 
@@ -105,20 +103,22 @@ public class StayService {
             var end = req.checkOut() != null ? req.checkOut() : StayRepository.MAX;
             var excludeId = stay.getId() != null ? stay.getId() : -1L;
             stays.findOverlapping(room.getId(), excludeId, req.checkIn(), end).stream().findFirst().ifPresent(other -> {
-                throw new BusinessException("Room " + room.getNumber() + " is already booked for " + other.getGuest().getName()
+                throw new BusinessException((room.isApartment() ? room.getName() : "Room " + room.getNumber()) + " is already booked for " + other.getGuest().getName()
                         + " from " + DATE.format(other.getCheckIn())
                         + (other.getCheckOut() != null ? " to " + DATE.format(other.getCheckOut()) : " (no end date)") + ".");
             });
         }
 
+        var source = longTerm ? null : req.source();
+        boolean sameSite = source == stay.getSource() && stay.getRoom() != null
+                && stay.getRoom().getProperty().getId().equals(room.getProperty().getId());
+        if (source == null) stay.setCommissionPct(null);
+        else if (!sameSite || stay.getCommissionPct() == null) stay.setCommissionPct(room.getProperty().commissionFor(source));
+        stay.setSource(source);
         stay.setRoom(room);
         stay.setGuest(resolveGuest(req));
         stay.setPeople(req.people());
         stay.setLongTerm(longTerm);
-        var source = longTerm ? null : req.source();
-        if (source != StaySource.BOOKING) stay.setCommissionPct(null);
-        else if (stay.getSource() != StaySource.BOOKING || stay.getCommissionPct() == null) stay.setCommissionPct(settings.bookingCommission());
-        stay.setSource(source);
         stay.setCheckIn(req.checkIn());
         stay.setCheckOut(req.checkOut());
         if (stay.getAmount() == null || stay.getAmount().compareTo(req.amount()) != 0 || !req.currency().equals(stay.getCurrency())) {

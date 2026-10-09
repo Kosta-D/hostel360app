@@ -19,7 +19,7 @@ public final class StayDto {
             Long guestId,
             @Size(max = 100) String guestName,
             @Size(max = 60) String guestCountry,
-            @NotNull @Min(1) @Max(2) Integer people,
+            @NotNull @Min(1) @Max(10) Integer people,
             @NotNull Boolean longTerm,
             StaySource source,
             @NotNull LocalDate checkIn,
@@ -30,8 +30,8 @@ public final class StayDto {
             @Size(max = 500) String note) {
     }
 
-    @Schema(name = "StayRoom")
-    public record RoomRef(Long id, int number, String name) {}
+    @Schema(name = "StayRoom", description = "For an apartment, name is the apartment's name")
+    public record RoomRef(Long id, int number, String name, Long propertyId, String propertyName, boolean apartment) {}
 
     @Schema(name = "StayGuest")
     public record GuestRef(Long id, String name, @Schema(nullable = true) String country) {}
@@ -54,7 +54,8 @@ public final class StayDto {
             var guest = s.getGuest();
             Integer nights = s.isLongTerm() || s.getCheckOut() == null ? null : (int) ChronoUnit.DAYS.between(s.getCheckIn(), s.getCheckOut());
             var amountPrimary = s.amountPrimary();
-            return new Response(s.getId(), new RoomRef(room.getId(), room.getNumber(), room.getName()),
+            return new Response(s.getId(), new RoomRef(room.getId(), room.getNumber(), room.getName(), room.getProperty().getId(),
+                    room.getProperty().getName(), room.isApartment()),
                     new GuestRef(guest.getId(), guest.getName(), guest.getCountry()), s.getPeople(), s.isLongTerm(),
                     s.getSource(), s.getCheckIn(), s.getCheckOut(), nights, s.getAmount(), s.getCurrency(), s.getRate(),
                     amountPrimary, s.getPaymentStatus(), s.getStatus(), s.getNote());

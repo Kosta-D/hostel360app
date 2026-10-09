@@ -39,7 +39,7 @@ export function StayCard({ stay, actions, onEdit }: Props) {
         </Menu>
       </Group>
       <Text size="sm">
-        Room <b>{stay.room.number}</b> · {stay.room.name} · {stay.people} {stay.people > 1 ? 'people' : 'person'}
+        {stay.room.apartment ? <b>{stay.room.name}</b> : <>Room <b>{stay.room.number}</b> · {stay.room.name}</>} · {stay.people} {stay.people > 1 ? 'people' : 'person'}
         <Text span c="dimmed"> · {stayPeriod(stay)}</Text>
       </Text>
       {stay.note && <Text size="xs" c="dimmed">{stay.note}</Text>}

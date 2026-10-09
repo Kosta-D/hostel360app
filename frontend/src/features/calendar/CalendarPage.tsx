@@ -1,10 +1,11 @@
 import { ActionIcon, Box, Button, Group, Paper, ScrollArea, Text, Tooltip, UnstyledButton } from '@mantine/core'
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import dayjs from 'dayjs'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useListRooms, useListStays, type Room, type Stay } from '@/api/generated'
 import { addDays, diffDays, fmtDate, today } from '@/shared/dates'
 import { PageHeader } from '@/shared/PageHeader'
+import { unitLabel, unitName, useProperties } from '@/shared/properties'
 import { StayDrawer, type StayTarget } from '@/features/stays/StayDrawer'
 import { stayPeriod } from '@/features/stays/stayPeriod'
 import { LONG_TERM, SOURCE, stayKind } from '@/features/stays/stayLabels'
@@ -14,11 +15,15 @@ const DAYS = 14
 const ROOM_COL = 150
 const DAY_W = 44
 
+/** Calendar sections: one per hostel, and one for all apartments. */
+const group = (r: Room) => (r.apartment ? 'Apartments' : r.propertyName)
+
 export function CalendarPage() {
   const [start, setStart] = useState(today)
   const end = addDays(start, DAYS)
   const days = Array.from({ length: DAYS }, (_, i) => addDays(start, i))
   const { data: rooms = [] } = useListRooms()
+  const { several } = useProperties()
   const { data: stays = [] } = useListStays({ from: start, to: end })
   const [target, setTarget] = useState<StayTarget>(null)
   const actions = useStayActions(() => setTarget(null))
@@ -36,7 +41,7 @@ export function CalendarPage() {
           <Text fw={600} ml="xs">{fmtDate(start)} – {fmtDate(addDays(end, -1))}</Text>
         </Group>
         <Group gap="md">
-          {[SOURCE.BOOKING, SOURCE.DIRECT, LONG_TERM].map((k) => (
+          {[SOURCE.BOOKING, SOURCE.AIRBNB, SOURCE.DIRECT, LONG_TERM].map((k) => (
             <Group key={k.label} gap={6}><Box w={12} h={12} bg={`${k.color}.6`} style={{ borderRadius: 3 }} /><Text size="xs">{k.label}</Text></Group>
           ))}
         </Group>
@@ -54,11 +59,17 @@ export function CalendarPage() {
                 </Box>
               ))}
             </Box>
-            {rooms.map((room) => (
-              <RoomRow key={room.id} room={room} days={days} start={start} end={end} today={t} grid={grid}
-                stays={stays.filter((s) => s.room.id === room.id && s.status !== 'CANCELLED')}
-                onEmpty={(day) => setTarget({ defaults: { roomId: room.id, checkIn: day } })}
-                onStay={(stay) => setTarget({ stay })} />
+            {rooms.map((room, i) => (
+              <Fragment key={room.id}>
+                {several && group(room) !== (i > 0 ? group(rooms[i - 1]) : null) && (
+                  <Text size="xs" fw={700} c="dimmed" tt="uppercase" px="xs" pt="sm" pb={4}
+                    style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>{group(room)}</Text>
+                )}
+                <RoomRow room={room} days={days} start={start} end={end} today={t} grid={grid}
+                  stays={stays.filter((s) => s.room.id === room.id && s.status !== 'CANCELLED')}
+                  onEmpty={(day) => setTarget({ defaults: { roomId: room.id, checkIn: day } })}
+                  onStay={(stay) => setTarget({ stay })} />
+              </Fragment>
             ))}
           </Box>
         </ScrollArea>
@@ -78,10 +89,10 @@ function RoomRow({ room, days, start, end, today, grid, stays, onEmpty, onStay }
   return (
     <Box style={{ ...grid, borderTop: '1px solid var(--mantine-color-default-border)' }} h={44}>
       <Box p="xs" style={{ gridRow: 1, gridColumn: 1 }}>
-        <Text size="sm" fw={600} truncate>{room.number} · {room.name}</Text>
+        <Text size="sm" fw={600} truncate>{unitLabel(room)}</Text>
       </Box>
       {days.map((d, i) => (
-        <UnstyledButton key={d} aria-label={`Book room ${room.number} on ${fmtDate(d)}`} onClick={() => onEmpty(d)}
+        <UnstyledButton key={d} aria-label={`Book ${unitName(room)} on ${fmtDate(d)}`} onClick={() => onEmpty(d)}
           style={{
             gridRow: 1, gridColumn: i + 2, borderLeft: '1px solid var(--mantine-color-default-border)',
             background: d === today ? 'var(--mantine-primary-color-light)' : dayjs(d).day() % 6 === 0 ? 'var(--mantine-color-default-hover)' : undefined,

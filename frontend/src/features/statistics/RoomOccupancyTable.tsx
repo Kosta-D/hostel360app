@@ -35,7 +35,7 @@ export function RoomOccupancyTable({ rooms }: { rooms: StatsRoom[] }) {
           <Table.Tbody>
             {rooms.map((r) => (
               <Table.Tr key={r.id}>
-                <Table.Td style={{ whiteSpace: 'nowrap' }}><Text span fw={600}>{r.number}</Text> <Text span size="sm" c="dimmed">{r.name}</Text></Table.Td>
+                <Table.Td style={{ whiteSpace: 'nowrap' }}>{r.apartment ? <Text span fw={600}>{r.name}</Text> : <><Text span fw={600}>{r.number}</Text> <Text span size="sm" c="dimmed">{r.name}</Text></>}</Table.Td>
                 {r.months.map((m, i) => <Cell key={i} {...m} />)}
                 <Table.Td ta="right">{r.nightsSold}</Table.Td>
                 <Table.Td ta="right">{r.occupancy}%</Table.Td>

@@ -13,7 +13,7 @@ public interface StayRepository extends JpaRepository<Stay, Long> {
 
     /** Stays overlapping [from, to), optionally for one guest (guestId = -1 for all). */
     @Query("""
-            select s from Stay s join fetch s.room join fetch s.guest
+            select s from Stay s join fetch s.room r join fetch r.property join fetch s.guest
             where s.checkIn < :to and (s.checkOut is null or s.checkOut > :from)
               and (:guestId = -1 or s.guest.id = :guestId)
             order by s.checkIn, s.room.number""")
