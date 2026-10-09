@@ -61,7 +61,7 @@ public class StatsService {
             var arrived = arrivals(stays, from, to);
             BigDecimal booking = sum(arrived, s -> s.getSource() == StaySource.BOOKING), direct = sum(arrived, s -> s.getSource() != StaySource.BOOKING);
             var rent = stays.stream().filter(Stay::isLongTerm).filter(s -> s.rentMonths(ym).anyMatch(ym::equals))
-                    .map(Stay::amountEur).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .map(Stay::amountPrimary).reduce(BigDecimal.ZERO, BigDecimal::add);
             months.add(new Month(from, pct(sold, available), sold, available, booking, direct, rent,
                     ratio(booking.add(direct), totalNights(arrived))));
         }
@@ -122,7 +122,7 @@ public class StatsService {
     private static List<Country> countries(List<Stay> arrived, List<Stay> longTerm, int year) {
         LocalDate from = LocalDate.of(year, 1, 1), to = from.plusYears(1);
         var byCountry = new HashMap<String, CountryAcc>();
-        for (var s : arrived) byCountry.computeIfAbsent(countryOf(s), c -> new CountryAcc()).add(s, s.nightsWithin(s.getCheckIn(), s.getCheckOut()), s.amountEur());
+        for (var s : arrived) byCountry.computeIfAbsent(countryOf(s), c -> new CountryAcc()).add(s, s.nightsWithin(s.getCheckIn(), s.getCheckOut()), s.amountPrimary());
         for (var s : longTerm) byCountry.computeIfAbsent(countryOf(s), c -> new CountryAcc()).add(s, s.nightsWithin(from, to), rentInYear(s, year));
         return byCountry.entrySet().stream()
                 .map(e -> new Country(e.getKey().isEmpty() ? null : e.getKey(), e.getValue().guests.size(), e.getValue().stays, e.getValue().nights, e.getValue().income))
@@ -162,11 +162,11 @@ public class StatsService {
 
     private static BigDecimal rentInYear(Stay s, int year) {
         long months = s.rentMonths(YearMonth.of(year, 12)).filter(m -> m.getYear() == year).count();
-        return s.amountEur().multiply(BigDecimal.valueOf(months));
+        return s.amountPrimary().multiply(BigDecimal.valueOf(months));
     }
 
     private static BigDecimal sum(List<Stay> stays, Predicate<Stay> filter) {
-        return stays.stream().filter(filter).map(Stay::amountEur).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return stays.stream().filter(filter).map(Stay::amountPrimary).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private static BigDecimal pct(int part, int whole) {

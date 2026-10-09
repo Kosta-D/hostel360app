@@ -44,8 +44,8 @@ public final class StayDto {
             @Schema(nullable = true, description = "Exclusive end date; empty for an open-ended long-term stay") LocalDate checkOut,
             @Schema(nullable = true, description = "Short stays only") Integer nights,
             BigDecimal amount, String currency,
-            @Schema(description = "Units of the currency per 1 EUR when saved") BigDecimal rate,
-            @Schema(description = "Amount converted to EUR with the saved rate") BigDecimal amountEur,
+            @Schema(description = "Units of the currency per 1 primary currency when saved") BigDecimal rate,
+            @Schema(description = "Amount converted to the primary currency with the saved rate") BigDecimal amountPrimary,
             PaymentStatus paymentStatus, StayStatus status,
             @Schema(nullable = true) String note) {
 
@@ -53,11 +53,11 @@ public final class StayDto {
             var room = s.getRoom();
             var guest = s.getGuest();
             Integer nights = s.isLongTerm() || s.getCheckOut() == null ? null : (int) ChronoUnit.DAYS.between(s.getCheckIn(), s.getCheckOut());
-            var amountEur = s.amountEur();
+            var amountPrimary = s.amountPrimary();
             return new Response(s.getId(), new RoomRef(room.getId(), room.getNumber(), room.getName()),
                     new GuestRef(guest.getId(), guest.getName(), guest.getCountry()), s.getPeople(), s.isLongTerm(),
                     s.getSource(), s.getCheckIn(), s.getCheckOut(), nights, s.getAmount(), s.getCurrency(), s.getRate(),
-                    amountEur, s.getPaymentStatus(), s.getStatus(), s.getNote());
+                    amountPrimary, s.getPaymentStatus(), s.getStatus(), s.getNote());
         }
     }
 }

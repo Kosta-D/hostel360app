@@ -92,49 +92,32 @@ class ApiTest {
         mvc.perform(authed(get("/api/rooms/" + id))).andExpect(status().isNotFound());
     }
 
-    @Test
-    void settingsShowTotalsAlsoInRsd() throws Exception {
-        mvc.perform(authed(get("/api/settings"))).andExpect(jsonPath("$.displayCurrency").value("RSD"));
-        mvc.perform(authed(put("/api/settings")).content("{\"hostelName\":\"Hostel 360\",\"bookingCommission\":15,\"displayCurrency\":\"XYZ\"}"))
-                .andExpect(status().isConflict());
-        mvc.perform(authed(put("/api/settings")).content("{\"hostelName\":\"Hostel 360\",\"bookingCommission\":15,\"displayCurrency\":\"RSD\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.hostelName").value("Hostel 360"));
+    String settings(String second, Object secondRate, String third, Object thirdRate) throws Exception {
+        var m = new java.util.HashMap<String, Object>(Map.of("hostelName", "Hostel 360", "bookingCommission", 15));
+        m.put("secondCurrency", second); m.put("secondRate", secondRate);
+        m.put("thirdCurrency", third); m.put("thirdRate", thirdRate);
+        return json.writeValueAsString(m);
     }
 
     @Test
-    void managesOwnCurrencies() throws Exception {
-        mvc.perform(authed(get("/api/currencies")))
-                .andExpect(jsonPath("$[0].code").value("EUR"))
-                .andExpect(jsonPath("$[?(@.code == 'RSD')].rate").value(117.4));
-        mvc.perform(authed(put("/api/currencies/EUR")).content("{\"code\":\"EUR\",\"name\":\"Euro\",\"rate\":2,\"active\":true}"))
-                .andExpect(status().isConflict());
-
-        mvc.perform(authed(post("/api/currencies")).content("{\"code\":\"huf\",\"name\":\"Forint\",\"rate\":400,\"active\":true}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.code").value("HUF"))
-                .andExpect(jsonPath("$.inUse").value(false));
-        mvc.perform(authed(post("/api/currencies")).content("{\"code\":\"HUF\",\"name\":\"Forint\",\"rate\":400,\"active\":true}"))
-                .andExpect(status().isConflict());
-
-        // A stay in HUF keeps the rate it was saved with, even after the rate changes.
-        var created = mvc.perform(authed(post("/api/stays")).content(stay(roomId(20), "Gábor Kiss", 1, false, "2031-03-01", "2031-03-03", "HUF", 20000)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.rate").value(400))
-                .andExpect(jsonPath("$.amountEur").value(50.0))
-                .andReturn().getResponse().getContentAsString();
-        var stayId = json.readTree(created).get("id").asLong();
-        mvc.perform(authed(put("/api/currencies/HUF")).content("{\"code\":\"HUF\",\"name\":\"Forint\",\"rate\":500,\"active\":false}"))
+    void threeCurrencySlots() throws Exception {
+        mvc.perform(authed(get("/api/settings")))
+                .andExpect(jsonPath("$.primaryCurrency").value("EUR"))
+                .andExpect(jsonPath("$.secondCurrency").value("RSD"))
+                .andExpect(jsonPath("$.secondRate").value(117.4));
+        mvc.perform(authed(put("/api/settings")).content(settings("RSD", 117.4, "rsd", 117.4))).andExpect(status().isConflict());
+        mvc.perform(authed(put("/api/settings")).content(settings("RSD", 117.4, "EUR", 1))).andExpect(status().isConflict());
+        mvc.perform(authed(put("/api/settings")).content(settings("RSD", 117.4, "USD", null))).andExpect(status().isConflict());
+        mvc.perform(authed(put("/api/settings")).content(settings(null, null, "RSD", 117.4)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.inUse").value(true));
-        mvc.perform(authed(get("/api/stays/" + stayId))).andExpect(jsonPath("$.amountEur").value(50.0));
+                .andExpect(jsonPath("$.secondCurrency").value("RSD"))
+                .andExpect(jsonPath("$.thirdCurrency").doesNotExist());
+    }
 
-        // Switched off: no new amounts in it, and it can't be deleted while used.
+    @Test
+    void amountsOutsideTheThreeCurrenciesAreRefused() throws Exception {
         mvc.perform(authed(post("/api/expenses")).content("{\"date\":\"2031-03-01\",\"category\":\"OTHER\",\"amount\":1000,\"currency\":\"HUF\",\"repeatMonthly\":false}"))
                 .andExpect(status().isConflict());
-        mvc.perform(authed(delete("/api/currencies/HUF"))).andExpect(status().isConflict());
-        mvc.perform(authed(delete("/api/stays/" + stayId))).andExpect(status().isNoContent());
-        mvc.perform(authed(delete("/api/currencies/HUF"))).andExpect(status().isNoContent());
     }
 
     long roomId(int number) throws Exception {
@@ -159,7 +142,7 @@ class ApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.guest.name").value("Ana Petrović"))
                 .andExpect(jsonPath("$.nights").value(3))
-                .andExpect(jsonPath("$.amountEur").value(100.0))
+                .andExpect(jsonPath("$.amountPrimary").value(100.0))
                 .andExpect(jsonPath("$.status").value("BOOKED"))
                 .andReturn().getResponse().getContentAsString();
         var guestId = json.readTree(created).get("guest").get("id").asLong();
@@ -345,7 +328,7 @@ class ApiTest {
 
         mvc.perform(authed(get("/api/finance/unpaid")))
                 .andExpect(jsonPath(unpaid.formatted(tenant) + ".month").value(org.hamcrest.Matchers.contains("2021-01-01", "2021-02-01")))
-                .andExpect(jsonPath(unpaid.formatted(guest) + ".amountEur").value(org.hamcrest.Matchers.contains(40.0)));
+                .andExpect(jsonPath(unpaid.formatted(guest) + ".amountPrimary").value(org.hamcrest.Matchers.contains(40.0)));
 
         mvc.perform(authed(put("/api/finance/rent-payments")).content(json.writeValueAsString(Map.of("stayId", tenant, "month", "2021-01-01", "paid", true))))
                 .andExpect(status().isNoContent());

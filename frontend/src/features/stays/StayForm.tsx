@@ -4,8 +4,9 @@ import { useForm } from '@mantine/form'
 import dayjs from 'dayjs'
 import { useListGuests, useListRooms, type Stay, type StayRequest } from '@/api/generated'
 import { COUNTRIES } from '@/shared/countries'
-import { CurrencyPicker, EurHint } from '@/shared/currency'
+import { CurrencyPicker, PrimaryHint } from '@/shared/currency'
 import { ISO, addDays, diffDays } from '@/shared/dates'
+import { primaryCurrency } from '@/shared/format'
 import { PAYMENT, SOURCE, toOptions } from './stayLabels'
 
 /** Values a new stay can start from (e.g. a room and day clicked in the calendar). */
@@ -39,7 +40,7 @@ function initialValues(stay?: Stay, defaults: StayDefaults = {}): Values {
       roomId: defaults.roomId ? String(defaults.roomId) : null, guestId: null, newGuest: false, guestName: '', guestCountry: null,
       longTerm: false, source: 'BOOKING', dates: [checkIn, checkIn ? addDays(checkIn, 1) : null],
       fromMonth: checkIn ? month(checkIn) : null, toMonth: null, indefinite: false,
-      people: 1, amount: '', currency: 'EUR', paymentStatus: 'NOT_PAID', note: '',
+      people: 1, amount: '', currency: primaryCurrency(), paymentStatus: 'NOT_PAID', note: '',
     }
   }
   return {
@@ -146,7 +147,7 @@ export function StayForm({ stay, defaults, saving, onSubmit }: Props) {
             <CurrencyPicker value={v.currency} onChange={(x) => form.setFieldValue('currency', x)} />
           </Input.Wrapper>
         </Group>
-        <EurHint amount={Number(v.amount)} currency={v.currency} />
+        <PrimaryHint amount={Number(v.amount)} currency={v.currency} />
 
         {v.longTerm ? (
           <Text size="xs" c="dimmed" mt={-8}>Rent is marked paid month by month in Finance → Unpaid.</Text>

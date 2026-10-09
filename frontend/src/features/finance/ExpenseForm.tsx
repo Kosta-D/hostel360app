@@ -2,15 +2,16 @@ import { Button, Group, Input, NumberInput, Select, Stack, Switch, Textarea } fr
 import { DateInput } from '@mantine/dates'
 import { useForm } from '@mantine/form'
 import type { Expense, ExpenseRequest } from '@/api/generated'
-import { CurrencyPicker, EurHint } from '@/shared/currency'
+import { CurrencyPicker, PrimaryHint } from '@/shared/currency'
 import { today } from '@/shared/dates'
+import { primaryCurrency } from '@/shared/format'
 import { CATEGORY_OPTIONS } from './financeLabels'
 
 export function ExpenseForm({ expense, saving, onSubmit }: { expense?: Expense; saving: boolean; onSubmit: (data: ExpenseRequest) => void }) {
   const form = useForm<ExpenseRequest>({
     initialValues: expense
       ? { date: expense.date, category: expense.category, amount: expense.amount, currency: expense.currency, note: expense.note ?? '', repeatMonthly: expense.repeatMonthly }
-      : { date: today(), category: 'CLEANING', amount: 0, currency: 'EUR', note: '', repeatMonthly: false },
+      : { date: today(), category: 'CLEANING', amount: 0, currency: primaryCurrency(), note: '', repeatMonthly: false },
     validate: { amount: (v) => (v > 0 ? null : 'Enter the amount') },
   })
 
@@ -25,7 +26,7 @@ export function ExpenseForm({ expense, saving, onSubmit }: { expense?: Expense; 
             <CurrencyPicker value={form.values.currency} onChange={(v) => form.setFieldValue('currency', v)} />
           </Input.Wrapper>
         </Group>
-        <EurHint amount={form.values.amount} currency={form.values.currency} />
+        <PrimaryHint amount={form.values.amount} currency={form.values.currency} />
         <Textarea label="Note" placeholder="Optional" autosize minRows={2} {...form.getInputProps('note')} />
         <Switch label="Repeats every month" description="For fixed costs like internet or the accountant"
           {...form.getInputProps('repeatMonthly', { type: 'checkbox' })} />

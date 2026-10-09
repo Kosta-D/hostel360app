@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-/** Yearly statistics. Money is in EUR and counts on the arrival date; occupancy counts nights. */
+/** Yearly statistics. Money is in the primary currency and counts on the arrival date; occupancy counts nights. */
 public final class StatsDto {
     private StatsDto() {}
 

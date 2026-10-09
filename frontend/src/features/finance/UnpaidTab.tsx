@@ -13,7 +13,7 @@ export function UnpaidTab() {
   const opts = { mutation: { onSuccess: () => { refresh(); notify.ok('Marked as paid') }, onError: notify.error } }
   const markStay = useMarkPaid(opts)
   const markRent = useSetRentPaid(opts)
-  const total = items.reduce((sum, i) => sum + i.amountEur, 0)
+  const total = items.reduce((sum, i) => sum + i.amountPrimary, 0)
 
   const pay = (i: UnpaidItem) =>
     i.month ? markRent.mutate({ data: { stayId: i.stayId, month: i.month, paid: true } }) : markStay.mutate({ id: i.stayId })

@@ -1,9 +1,9 @@
 import { Text } from '@mantine/core'
 import { money } from '@/shared/format'
-import { useDisplayCurrency } from '@/shared/useDisplayCurrency'
+import { useDisplayCurrency } from '@/shared/currencies'
 
-/** An EUR amount with its value in the display currency (at today's rate) underneath. */
-export function Eur({ value, strong }: { value: number; strong?: boolean }) {
+/** A total in the primary currency with its value in the second currency (at today's rate) underneath. */
+export function Total({ value, strong }: { value: number; strong?: boolean }) {
   const display = useDisplayCurrency()
   return (
     <div>
