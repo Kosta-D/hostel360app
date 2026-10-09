@@ -7,7 +7,6 @@ import com.hostel360.finance.FinanceDto.MonthSummary;
 import com.hostel360.finance.FinanceDto.UnpaidItem;
 import com.hostel360.stay.Stay;
 import com.hostel360.stay.StayEnums.PaymentStatus;
-import com.hostel360.stay.StayEnums.StaySource;
 import com.hostel360.stay.StayEnums.StayStatus;
 import com.hostel360.stay.StayRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,13 +47,13 @@ public class FinanceService {
             } else if (!s.getCheckIn().isBefore(from) && s.getCheckIn().isBefore(to)) {
                 var t = months.get(YearMonth.from(s.getCheckIn()));
                 t.arrivals++;
-                if (s.getSource() == StaySource.BOOKING) {
-                    t.booking = t.booking.add(value);
-                    var pct = s.getCommissionPct() != null ? s.getCommissionPct() : BigDecimal.ZERO;
-                    t.commission = t.commission.add(value.multiply(pct).divide(HUNDRED, 4, RoundingMode.HALF_UP));
-                } else {
-                    t.direct = t.direct.add(value);
+                switch (s.getSource()) {
+                    case BOOKING -> t.booking = t.booking.add(value);
+                    case AIRBNB -> t.airbnb = t.airbnb.add(value);
+                    case DIRECT -> t.direct = t.direct.add(value);
                 }
+                if (s.getCommissionPct() != null)
+                    t.commission = t.commission.add(value.multiply(s.getCommissionPct()).divide(HUNDRED, 4, RoundingMode.HALF_UP));
             }
         }
         for (var e : expenses.findCounting(from, to))
@@ -101,25 +100,25 @@ public class FinanceService {
     }
 
     private static UnpaidItem item(Stay s, LocalDate month) {
-        return new UnpaidItem(s.getId(), s.getGuest().getName(), s.getRoom().getNumber(), s.getRoom().getName(), s.isLongTerm(),
+        return new UnpaidItem(s.getId(), s.getGuest().getName(), s.getRoom().getNumber(), s.getRoom().getName(), s.getRoom().isApartment(), s.isLongTerm(),
                 s.getCheckIn(), s.getCheckOut(), month, s.getAmount(), s.getCurrency(), s.amountPrimary(),
                 s.isLongTerm() ? null : s.getPaymentStatus());
     }
 
     private static final class Totals {
-        BigDecimal booking = BigDecimal.ZERO, direct = BigDecimal.ZERO, longTerm = BigDecimal.ZERO, commission = BigDecimal.ZERO;
+        BigDecimal booking = BigDecimal.ZERO, airbnb = BigDecimal.ZERO, direct = BigDecimal.ZERO, longTerm = BigDecimal.ZERO, commission = BigDecimal.ZERO;
         final Map<ExpenseCategory, BigDecimal> byCategory = new EnumMap<>(ExpenseCategory.class);
         int arrivals;
 
         MonthSummary summary(YearMonth month) {
-            var income = booking.add(direct).add(longTerm);
+            var income = booking.add(airbnb).add(direct).add(longTerm);
             var expenses = byCategory.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
             var commission = this.commission.setScale(2, RoundingMode.HALF_UP);
             var costs = commission.add(expenses);
             var categories = byCategory.entrySet().stream()
                     .map(e -> new CategoryTotal(e.getKey(), e.getValue()))
                     .sorted(Comparator.comparing(CategoryTotal::amount).reversed()).toList();
-            return new MonthSummary(month.atDay(1), booking, direct, longTerm, income, commission, expenses, costs,
+            return new MonthSummary(month.atDay(1), booking, airbnb, direct, longTerm, income, commission, expenses, costs,
                     income.subtract(costs), categories, arrivals);
         }
     }

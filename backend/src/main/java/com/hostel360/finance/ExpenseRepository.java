@@ -9,8 +9,10 @@ import java.util.List;
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     /** Expenses that may count in [from, to): dated in the range, or repeating and started before its end. */
     @Query("""
-            select e from Expense e
+            select e from Expense e left join fetch e.property
             where e.date < :to and (e.date >= :from or (e.repeatMonthly = true and (e.repeatUntil is null or e.repeatUntil >= :from)))
             order by e.date, e.id""")
     List<Expense> findCounting(LocalDate from, LocalDate to);
+
+    boolean existsByPropertyId(Long propertyId);
 }

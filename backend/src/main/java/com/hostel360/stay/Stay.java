@@ -46,7 +46,7 @@ public class Stay extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private StayStatus status = StayStatus.BOOKED;
     private String note;
-    /** Booking.com commission in percent when the stay was saved; empty for other sources. */
+    /** Booking.com or Airbnb commission in percent when the stay was saved; empty for direct and long-term stays. */
     private BigDecimal commissionPct;
     /** Booking.com reservation number for imported stays. */
     private String bookingRef;

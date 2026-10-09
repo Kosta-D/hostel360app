@@ -8,6 +8,7 @@ import {
 import { fmtDate, fmtMonth } from '@/shared/dates'
 import { money, primaryCurrency } from '@/shared/format'
 import { notify } from '@/shared/notify'
+import { useProperties } from '@/shared/properties'
 import { ExpenseForm } from './ExpenseForm'
 import { ExpenseSummary, type Span } from './ExpenseSummary'
 import { CATEGORY } from './financeLabels'
@@ -27,6 +28,7 @@ export function ExpensesTab({ month, months }: { month: string; months?: MonthSu
   const update = useUpdateExpense(opts('Expense saved', true))
   const remove = useDeleteExpense(opts('Expense deleted'))
   const stop = useStopRepeating(opts('It will stop repeating after this month'))
+  const { several } = useProperties()
   const total = expenses.reduce((sum, e) => sum + e.amountPrimary, 0)
 
   const confirmDelete = (e: Expense) =>
@@ -59,7 +61,10 @@ export function ExpensesTab({ month, months }: { month: string; months?: MonthSu
                   <Table.Tr key={e.id}>
                     <Table.Td style={{ whiteSpace: 'nowrap' }}>{e.repeatMonthly ? <Badge variant="light">Monthly</Badge> : fmtDate(e.date)}</Table.Td>
                     <Table.Td>
-                      <Text size="sm">{CATEGORY[e.category]}</Text>
+                      <Group gap={6}>
+                        <Text size="sm">{CATEGORY[e.category]}</Text>
+                        {several && <Badge variant="default" size="sm">{e.propertyName ?? 'Shared'}</Badge>}
+                      </Group>
                       {e.note && <Text size="xs" c="dimmed">{e.note}</Text>}
                     </Table.Td>
                     <Table.Td ta="right" style={{ whiteSpace: 'nowrap' }}>

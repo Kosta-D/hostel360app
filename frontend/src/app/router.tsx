@@ -4,6 +4,7 @@ import { CalendarPage } from '@/features/calendar/CalendarPage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { FinancePage } from '@/features/finance/FinancePage'
 import { GuestsPage } from '@/features/guests/GuestsPage'
+import { PropertiesPage } from '@/features/properties/PropertiesPage'
 import { RoomsPage } from '@/features/rooms/RoomsPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { StatisticsPage } from '@/features/statistics/StatisticsPage'
@@ -16,6 +17,7 @@ export const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { path: '/', element: <DashboardPage /> },
+      { path: '/properties', element: <PropertiesPage /> },
       { path: '/rooms', element: <RoomsPage /> },
       { path: '/stays', element: <StaysPage /> },
       { path: '/calendar', element: <CalendarPage /> },

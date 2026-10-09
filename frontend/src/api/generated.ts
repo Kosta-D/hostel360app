@@ -29,6 +29,7 @@ export type StayRequestSource = typeof StayRequestSource[keyof typeof StayReques
 
 export const StayRequestSource = {
   BOOKING: 'BOOKING',
+  AIRBNB: 'AIRBNB',
   DIRECT: 'DIRECT',
 } as const;
 
@@ -59,7 +60,7 @@ export interface StayRequest {
   guestCountry?: string;
   /**
      * @minimum 1
-     * @maximum 2
+     * @maximum 10
      */
   people: number;
   longTerm: boolean;
@@ -86,6 +87,7 @@ export type StaySource = typeof StaySource[keyof typeof StaySource] | null;
 
 export const StaySource = {
   BOOKING: 'BOOKING',
+  AIRBNB: 'AIRBNB',
   DIRECT: 'DIRECT',
 } as const;
 
@@ -108,10 +110,16 @@ export const StayStatus = {
   CANCELLED: 'CANCELLED',
 } as const;
 
+/**
+ * For an apartment, name is the apartment's name
+ */
 export interface StayRoom {
   id: number;
   number: number;
   name: string;
+  propertyId: number;
+  propertyName: string;
+  apartment: boolean;
 }
 
 export interface StayGuest {
@@ -158,11 +166,6 @@ export interface Stay {
 export interface Settings {
   /** @minLength 1 */
   hostelName: string;
-  /**
-     * @minimum 0
-     * @maximum 100
-     */
-  bookingCommission: number;
   /** Read-only here; change it with POST /api/settings/primary */
   primaryCurrency: string;
   /**
@@ -197,6 +200,7 @@ export const RoomRequestStatus = {
 } as const;
 
 export interface RoomRequest {
+  propertyId: number;
   /**
      * @minimum 1
      * @maximum 999
@@ -208,13 +212,13 @@ export interface RoomRequest {
      */
   name: string;
   /**
-     * @minimum 1
-     * @maximum 2
+     * @minimum -5
+     * @maximum 200
      */
   floor: number;
   /**
      * @minimum 1
-     * @maximum 2
+     * @maximum 10
      */
   capacity: number;
   longTerm: boolean;
@@ -235,16 +239,96 @@ export const RoomStatus = {
   TAKEN: 'TAKEN',
 } as const;
 
+/**
+ * A hostel room, or an apartment's hidden unit (apartment = true, named after the apartment)
+ */
 export interface Room {
   id: number;
+  propertyId: number;
+  propertyName: string;
+  apartment: boolean;
   number: number;
   name: string;
-  floor: number;
+  /** @nullable */
+  floor?: number | null;
   capacity: number;
   longTerm: boolean;
   status: RoomStatus;
   /** @nullable */
   bookingType?: string | null;
+}
+
+/**
+ * Can't be changed after the property is added
+ */
+export type PropertyRequestType = typeof PropertyRequestType[keyof typeof PropertyRequestType];
+
+
+export const PropertyRequestType = {
+  HOSTEL: 'HOSTEL',
+  APARTMENT: 'APARTMENT',
+} as const;
+
+export interface PropertyRequest {
+  /**
+     * @minLength 0
+     * @maxLength 60
+     */
+  name: string;
+  /** Can't be changed after the property is added */
+  type: PropertyRequestType;
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  address?: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  bookingCommission: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  airbnbCommission: number;
+  /**
+     * Apartments only: most guests at once
+     * @minimum 1
+     * @maximum 10
+     * @nullable
+     */
+  guests?: number | null;
+}
+
+export type PropertyType = typeof PropertyType[keyof typeof PropertyType];
+
+
+export const PropertyType = {
+  HOSTEL: 'HOSTEL',
+  APARTMENT: 'APARTMENT',
+} as const;
+
+export interface Property {
+  id: number;
+  name: string;
+  type: PropertyType;
+  /** @nullable */
+  address?: string | null;
+  bookingCommission: number;
+  airbnbCommission: number;
+  /**
+     * Apartments only: most guests at once
+     * @nullable
+     */
+  guests?: number | null;
+  /**
+     * Apartments only: the hidden room that stays are booked in
+     * @nullable
+     */
+  unitId?: number | null;
+  /** Hostels: number of rooms */
+  rooms: number;
 }
 
 export interface GuestRequest {
@@ -299,6 +383,11 @@ export const ExpenseRequestCategory = {
 } as const;
 
 export interface ExpenseRequest {
+  /**
+     * Empty for an expense shared by all properties
+     * @nullable
+     */
+  propertyId?: number | null;
   date: string;
   category: ExpenseRequestCategory;
   /** @minimum 0 */
@@ -333,6 +422,13 @@ export const ExpenseCategory = {
 
 export interface Expense {
   id: number;
+  /**
+     * Empty when shared
+     * @nullable
+     */
+  propertyId?: number | null;
+  /** @nullable */
+  propertyName?: string | null;
   date: string;
   category: ExpenseCategory;
   amount: number;
@@ -408,6 +504,7 @@ export interface StatsMonth {
   nightsSold: number;
   nightsAvailable: number;
   booking: number;
+  airbnb: number;
   direct: number;
   longTerm: number;
   avgPrice: number;
@@ -423,7 +520,9 @@ export interface StatsRoomMonth {
 export interface StatsRoom {
   id: number;
   number: number;
+  /** The apartment's name for an apartment */
   name: string;
+  apartment: boolean;
   nightsSold: number;
   /** Short-term occupancy for the year, in percent */
   occupancy: number;
@@ -497,9 +596,11 @@ export interface MonthSummary {
   /** First day of the month */
   month: string;
   booking: number;
+  airbnb: number;
   direct: number;
   longTerm: number;
   income: number;
+  /** Booking.com and Airbnb commission */
   commission: number;
   expenses: number;
   costs: number;
@@ -529,7 +630,9 @@ export interface UnpaidItem {
   stayId: number;
   guestName: string;
   roomNumber: number;
+  /** The apartment's name for an apartment */
   roomName: string;
+  apartment: boolean;
   longTerm: boolean;
   checkIn: string;
   /** @nullable */
@@ -553,6 +656,10 @@ export type ListStaysParams = {
 from?: string;
 to?: string;
 guestId?: number;
+};
+
+export type ImportBookingParams = {
+propertyId: number;
 };
 
 export type ImportBookingBody = {
@@ -1153,6 +1260,129 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteRoomMutationOptions(options), queryClient);
+    }
+
+export const updateProperty = (
+    id: number,
+    propertyRequest: PropertyRequest,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Property>(
+      {url: `/api/properties/${id}`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: propertyRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getUpdatePropertyMutationKey = () => ['updateProperty'] as const;
+
+export const getUpdatePropertyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProperty>>, TError,UpdatePropertyMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProperty>>, TError,UpdatePropertyMutationVariables, TContext> => {
+
+const mutationKey = getUpdatePropertyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProperty>>, UpdatePropertyMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateProperty(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePropertyMutationResult = NonNullable<Awaited<ReturnType<typeof updateProperty>>>
+    export type UpdatePropertyMutationBody = PropertyRequest
+    export type UpdatePropertyMutationError = unknown
+    export type UpdatePropertyMutationVariables = {id: number;data: PropertyRequest}
+
+    export const useUpdateProperty = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProperty>>, TError,UpdatePropertyMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateProperty>>,
+        TError,
+        UpdatePropertyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdatePropertyMutationOptions(options), queryClient);
+    }
+
+export const deleteProperty = (
+    id: number,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<void>(
+      {url: `/api/properties/${id}`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeletePropertyMutationKey = () => ['deleteProperty'] as const;
+
+export const getDeletePropertyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProperty>>, TError,DeletePropertyMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteProperty>>, TError,DeletePropertyMutationVariables, TContext> => {
+
+const mutationKey = getDeletePropertyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteProperty>>, DeletePropertyMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteProperty(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePropertyMutationResult = NonNullable<Awaited<ReturnType<typeof deleteProperty>>>
+
+    export type DeletePropertyMutationError = unknown
+    export type DeletePropertyMutationVariables = {id: number}
+
+    export const useDeleteProperty = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProperty>>, TError,DeletePropertyMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteProperty>>,
+        TError,
+        DeletePropertyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeletePropertyMutationOptions(options), queryClient);
     }
 
 export const getGuest = (
@@ -1941,6 +2171,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     }
 
 export const importBooking = (
+    params: ImportBookingParams,
     importBookingBody?: ImportBookingBody,
  options?: SecondParameter<typeof http>,signal?: AbortSignal
 ) => {
@@ -1953,7 +2184,8 @@ if(importBookingBody?.file !== undefined) {
       return http<BookingImportResult>(
       {url: `/api/stays/import-booking`, method: 'POST',
       headers: {'Content-Type': 'multipart/form-data', },
-       data: formData, signal
+       data: formData,
+        params, signal
     },
       options);
     }
@@ -1978,9 +2210,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof importBooking>>, ImportBookingMutationVariables> = (props) => {
-          const {data} = props ?? {};
+          const {params,data} = props ?? {};
 
-          return  importBooking(data,requestOptions)
+          return  importBooking(params,data,requestOptions)
         }
 
 
@@ -1993,7 +2225,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ImportBookingMutationResult = NonNullable<Awaited<ReturnType<typeof importBooking>>>
     export type ImportBookingMutationBody = ImportBookingBody | undefined
     export type ImportBookingMutationError = unknown
-    export type ImportBookingMutationVariables = {data?: ImportBookingBody}
+    export type ImportBookingMutationVariables = {params: ImportBookingParams;data?: ImportBookingBody}
 
     export const useImportBooking = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importBooking>>, TError,ImportBookingMutationVariables, TContext>, request?: SecondParameter<typeof http>}
@@ -2215,6 +2447,155 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateRoomMutationOptions(options), queryClient);
+    }
+
+export const listProperties = (
+
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Property[]>(
+      {url: `/api/properties`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListPropertiesQueryKey = () => {
+    return [
+    `/api/properties`
+    ] as const;
+    }
+
+
+export const getListPropertiesQueryOptions = <TData = Awaited<ReturnType<typeof listProperties>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProperties>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPropertiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProperties>>> = ({ signal }) => listProperties(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProperties>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPropertiesQueryResult = NonNullable<Awaited<ReturnType<typeof listProperties>>>
+export type ListPropertiesQueryError = unknown
+
+
+export function useListProperties<TData = Awaited<ReturnType<typeof listProperties>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProperties>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listProperties>>,
+          TError,
+          Awaited<ReturnType<typeof listProperties>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListProperties<TData = Awaited<ReturnType<typeof listProperties>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProperties>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listProperties>>,
+          TError,
+          Awaited<ReturnType<typeof listProperties>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListProperties<TData = Awaited<ReturnType<typeof listProperties>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProperties>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListProperties<TData = Awaited<ReturnType<typeof listProperties>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProperties>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPropertiesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const createProperty = (
+    propertyRequest: PropertyRequest,
+ options?: SecondParameter<typeof http>,signal?: AbortSignal
+) => {
+
+
+      return http<Property>(
+      {url: `/api/properties`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: propertyRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreatePropertyMutationKey = () => ['createProperty'] as const;
+
+export const getCreatePropertyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProperty>>, TError,CreatePropertyMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProperty>>, TError,CreatePropertyMutationVariables, TContext> => {
+
+const mutationKey = getCreatePropertyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProperty>>, CreatePropertyMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createProperty(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePropertyMutationResult = NonNullable<Awaited<ReturnType<typeof createProperty>>>
+    export type CreatePropertyMutationBody = PropertyRequest
+    export type CreatePropertyMutationError = unknown
+    export type CreatePropertyMutationVariables = {data: PropertyRequest}
+
+    export const useCreateProperty = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProperty>>, TError,CreatePropertyMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createProperty>>,
+        TError,
+        CreatePropertyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreatePropertyMutationOptions(options), queryClient);
     }
 
 export const listGuests = (

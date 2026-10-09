@@ -2,25 +2,24 @@ import { Group, Paper, SimpleGrid, Table, Text, Title } from '@mantine/core'
 import type { MonthSummary } from '@/api/generated'
 import { money } from '@/shared/format'
 import { StatCard } from '@/shared/StatCard'
-import { useGetSettings } from '@/api/generated'
 import { useDisplayCurrency } from '@/shared/currencies'
 import { CATEGORY } from './financeLabels'
 import { Total } from './Total'
 
 /** One month's profit and loss: income by source, costs by category, and the profit. */
 export function MonthTab({ summary }: { summary?: MonthSummary }) {
-  const { data: settings } = useGetSettings()
   const display = useDisplayCurrency()
   if (!summary) return <Text c="dimmed" size="sm">Loading…</Text>
   const also = (v: number) => display?.show(v)
 
   const income: [string, number][] = [
     ['Booking.com', summary.booking],
+    ...(summary.airbnb ? [['Airbnb', summary.airbnb] as [string, number]] : []),
     ['Direct', summary.direct],
     ['Long term', summary.longTerm],
   ]
   const costs: [string, number][] = [
-    [`Booking.com commission (${settings?.bookingCommission ?? 15}%)`, summary.commission],
+    [summary.airbnb ? 'Booking.com and Airbnb commission' : 'Booking.com commission', summary.commission],
     ...summary.byCategory.map((c): [string, number] => [CATEGORY[c.category], c.amount]),
   ]
   const rows = (items: [string, number][], total: number, totalLabel: string) => (

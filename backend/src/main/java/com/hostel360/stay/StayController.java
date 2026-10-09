@@ -78,12 +78,12 @@ public class StayController {
         return Response.from(service.cancel(id));
     }
 
-    /** Imports a reservations export from the Booking.com extranet (.xls or .xlsx). */
+    /** Imports a reservations export from the Booking.com extranet (.xls or .xlsx) into one property. */
     @PostMapping(value = "/import-booking", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public BookingImportService.Result importBooking(@RequestPart("file") MultipartFile file) throws IOException {
+    public BookingImportService.Result importBooking(@RequestPart("file") MultipartFile file, @RequestParam Long propertyId) throws IOException {
         if (file.isEmpty()) throw new BusinessException("Choose the export file to import.");
         try (var in = file.getInputStream()) {
-            return bookingImport.importExport(in);
+            return bookingImport.importExport(in, propertyId);
         }
     }
 

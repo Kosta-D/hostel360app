@@ -10,7 +10,6 @@ import { PageHeader } from '@/shared/PageHeader'
 
 type Values = {
   hostelName: string
-  bookingCommission: number
   secondCurrency: string
   secondRate: number | string
   thirdCurrency: string
@@ -19,7 +18,7 @@ type Values = {
 type Slot = 'second' | 'third'
 
 const toValues = (s: Settings): Values => ({
-  hostelName: s.hostelName, bookingCommission: s.bookingCommission,
+  hostelName: s.hostelName,
   secondCurrency: s.secondCurrency ?? '', secondRate: s.secondRate ?? '',
   thirdCurrency: s.thirdCurrency ?? '', thirdRate: s.thirdRate ?? '',
 })
@@ -43,7 +42,7 @@ export function SettingsPage() {
       code(all[`${slot}Currency`]) && !(Number(v) > 0) ? 'Enter the rate' : null,
   })
   const form = useForm<Values>({
-    initialValues: { hostelName: '', bookingCommission: 15, secondCurrency: '', secondRate: '', thirdCurrency: '', thirdRate: '' },
+    initialValues: { hostelName: '', secondCurrency: '', secondRate: '', thirdCurrency: '', thirdRate: '' },
     validate: { hostelName: (v) => (v.trim() ? null : 'Required'), ...slotRules('second'), ...slotRules('third') },
   })
   useEffect(() => { if (data) { const v = toValues(data); form.setValues(v); form.resetDirty(v) } }, [data]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -68,7 +67,7 @@ export function SettingsPage() {
     const third = slot(v.thirdCurrency, v.thirdRate)
     save.mutate({
       data: {
-        hostelName: v.hostelName, bookingCommission: v.bookingCommission, primaryCurrency: primary,
+        hostelName: v.hostelName, primaryCurrency: primary,
         secondCurrency: second.currency, secondRate: second.rate, thirdCurrency: third.currency, thirdRate: third.rate,
       },
     })
@@ -123,16 +122,8 @@ export function SettingsPage() {
       <Paper withBorder p="lg" maw={560}>
         <form onSubmit={form.onSubmit(submit)}>
           <Stack>
-            <TextInput label="Hostel name" {...form.getInputProps('hostelName')} />
-            <NumberInput
-              label="Booking.com commission"
-              suffix=" %"
-              min={0}
-              max={100}
-              decimalScale={2}
-              description="Counted as a cost on every Booking.com stay. Past stays keep the rate they were saved with."
-              {...form.getInputProps('bookingCommission')}
-            />
+            <TextInput label="App name" description="Shown at the top of every page. Commissions are set per property on the Properties page."
+              {...form.getInputProps('hostelName')} />
 
             <Divider mt="xs" />
             <div>

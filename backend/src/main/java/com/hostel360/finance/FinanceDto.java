@@ -18,14 +18,15 @@ public final class FinanceDto {
     @Schema(name = "MonthSummary", description = "Income counts on the arrival date; long-term rent counts once per month.")
     public record MonthSummary(
             @Schema(description = "First day of the month") LocalDate month,
-            BigDecimal booking, BigDecimal direct, BigDecimal longTerm, BigDecimal income,
-            BigDecimal commission, BigDecimal expenses, BigDecimal costs, BigDecimal profit,
+            BigDecimal booking, BigDecimal airbnb, BigDecimal direct, BigDecimal longTerm, BigDecimal income,
+            @Schema(description = "Booking.com and Airbnb commission") BigDecimal commission, BigDecimal expenses, BigDecimal costs, BigDecimal profit,
             @Schema(description = "Expenses by category, largest first") List<CategoryTotal> byCategory,
             int arrivals) {}
 
     @Schema(name = "UnpaidItem", description = "A short stay not fully paid, or one unpaid month of a long-term stay")
     public record UnpaidItem(
-            Long stayId, String guestName, int roomNumber, String roomName, boolean longTerm,
+            Long stayId, String guestName, int roomNumber,
+            @Schema(description = "The apartment's name for an apartment") String roomName, boolean apartment, boolean longTerm,
             LocalDate checkIn,
             @Schema(nullable = true) LocalDate checkOut,
             @Schema(nullable = true, description = "Rent month (first day) for long-term stays") LocalDate month,

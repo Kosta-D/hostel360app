@@ -6,7 +6,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-/** Single-row table (id = 1) with hostel-wide settings. */
+/** Single-row table (id = 1) with app-wide settings. */
 @Entity
 @Getter
 @Setter
@@ -14,8 +14,6 @@ public class Settings {
     @Id
     private Long id;
     private String hostelName;
-    /** Booking.com commission in percent. */
-    private BigDecimal bookingCommission;
     /** All totals are in this currency. */
     private String primaryCurrency;
     /** Optional second currency (totals are also shown in it) and third one; rates are units per 1 primary. */

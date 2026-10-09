@@ -3,6 +3,7 @@ package com.hostel360.finance;
 import com.hostel360.common.NotFoundException;
 import com.hostel360.finance.ExpenseDto.Request;
 import com.hostel360.finance.ExpenseDto.Response;
+import com.hostel360.property.PropertyRepository;
 import com.hostel360.settings.CurrencyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,9 +19,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/expenses")
 @RequiredArgsConstructor
+@Transactional
 public class ExpenseController {
     private final ExpenseRepository repo;
     private final CurrencyService currencies;
+    private final PropertyRepository properties;
 
     /** Expenses that count in the month containing {@code month}, repeating ones included. */
     @GetMapping
@@ -70,6 +73,8 @@ public class ExpenseController {
     private void apply(Expense e, Request req) {
         if (e.getAmount() == null || e.getAmount().compareTo(req.amount()) != 0 || !req.currency().equals(e.getCurrency()))
             e.setRate(currencies.rateFor(req.currency(), e.getCurrency(), e.getRate()));
+        e.setProperty(req.propertyId() == null ? null
+                : properties.findById(req.propertyId()).orElseThrow(() -> new NotFoundException("Property", req.propertyId())));
         e.setDate(req.date());
         e.setCategory(req.category());
         e.setAmount(req.amount());

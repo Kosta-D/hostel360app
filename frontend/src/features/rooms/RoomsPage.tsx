@@ -1,4 +1,4 @@
-import { ActionIcon, Badge, Box, Button, Drawer, Group, Paper, SegmentedControl, Skeleton, Stack, Table, Text } from '@mantine/core'
+import { ActionIcon, Badge, Box, Button, Drawer, Group, Paper, SegmentedControl, Select, Skeleton, Stack, Table, Text } from '@mantine/core'
 import { modals } from '@mantine/modals'
 import { IconPencil, IconPlus, IconTrash, IconUser, IconUsers } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -9,17 +9,24 @@ import {
 } from '@/api/generated'
 import { notify } from '@/shared/notify'
 import { PageHeader } from '@/shared/PageHeader'
+import { useProperties } from '@/shared/properties'
 import { RoomForm } from './RoomForm'
 import { RoomStatusBadge } from './RoomStatusBadge'
 
-const FLOORS = [{ label: 'All floors', value: 'all' }, { label: 'Floor 1', value: '1' }, { label: 'Floor 2', value: '2' }]
 const TYPES = [{ label: 'All', value: 'all' }, { label: 'Short term', value: 'short' }, { label: 'Long term', value: 'long' }]
 
 export function RoomsPage() {
-  const { data: rooms, isLoading } = useListRooms()
+  const { data: all, isLoading } = useListRooms()
+  const { properties } = useProperties()
+  const hostels = properties.filter((p) => p.type === 'HOSTEL')
   const [editing, setEditing] = useState<Room | 'new' | null>(null)
+  const [hostel, setHostel] = useState<string | null>(null)
   const [floor, setFloor] = useState('all')
   const [type, setType] = useState('all')
+  // Apartments have one hidden unit and no rooms; with several hostels, one is shown at a time.
+  const hostelId = hostel ?? (hostels[0] ? String(hostels[0].id) : null)
+  const rooms = all?.filter((r) => !r.apartment && String(r.propertyId) === hostelId)
+  const floors = [...new Set(rooms?.map((r) => r.floor).filter((f) => f != null))].sort((a, b) => a! - b!)
   const queryClient = useQueryClient()
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: getListRoomsQueryKey() })
@@ -60,11 +67,18 @@ export function RoomsPage() {
       <PageHeader
         title="Rooms"
         description="Click a status to change it"
-        action={<Button leftSection={<IconPlus size={16} />} onClick={() => setEditing('new')}>Add room</Button>}
+        action={<Button leftSection={<IconPlus size={16} />} disabled={!hostelId} onClick={() => setEditing('new')}>Add room</Button>}
       />
 
       <Group mb="md" gap="sm">
-        <SegmentedControl size="xs" data={FLOORS} value={floor} onChange={setFloor} />
+        {hostels.length > 1 && (
+          <Select size="xs" w={180} allowDeselect={false} value={hostelId} onChange={(v) => { setHostel(v); setFloor('all') }}
+            data={hostels.map((p) => ({ value: String(p.id), label: p.name }))} />
+        )}
+        {floors.length > 1 && (
+          <SegmentedControl size="xs" value={floor} onChange={setFloor}
+            data={[{ label: 'All floors', value: 'all' }, ...floors.map((f) => ({ label: `Floor ${f}`, value: String(f) }))]} />
+        )}
         <SegmentedControl size="xs" data={TYPES} value={type} onChange={setType} />
       </Group>
 
@@ -81,7 +95,7 @@ export function RoomsPage() {
             <Group gap="xs" mt={6}>
               {status(room)}
               <RentalBadge room={room} />
-              <Text size="sm" c="dimmed">Floor {room.floor}</Text>
+              {room.floor != null && <Text size="sm" c="dimmed">Floor {room.floor}</Text>}
               <Capacity room={room} />
             </Group>
           </Paper>
@@ -128,6 +142,8 @@ export function RoomsPage() {
           <RoomForm
             key={editing === 'new' ? 'new' : editing.id}
             room={editing === 'new' ? undefined : editing}
+            hostels={hostels}
+            hostelId={Number(hostelId)}
             saving={create.isPending || update.isPending}
             onSubmit={save}
           />

@@ -36,8 +36,9 @@ export function StatisticsPage() {
 
   const months = (data?.months ?? []).map((m) => ({
     month: dayjs(m.month).format('MMM'), Occupancy: m.occupancy,
-    booking: m.booking, direct: m.direct, longTerm: m.longTerm,
+    booking: m.booking, airbnb: m.airbnb, direct: m.direct, longTerm: m.longTerm,
   }))
+  const airbnb = data?.months.some((m) => m.airbnb > 0)
 
   return (
     <>
@@ -74,6 +75,7 @@ export function StatisticsPage() {
               <BarChart h={240} data={months} dataKey="month" type="stacked" withLegend legendProps={{ verticalAlign: 'top' }}
                 series={[
                   { name: 'booking', label: 'Booking.com', color: SERIES.booking },
+                  ...(airbnb ? [{ name: 'airbnb', label: 'Airbnb', color: SERIES.airbnb }] : []),
                   { name: 'direct', label: 'Direct', color: SERIES.direct },
                   { name: 'longTerm', label: 'Long term', color: SERIES.longTerm },
                 ]}
@@ -88,7 +90,7 @@ export function StatisticsPage() {
                   <Table.Thead>
                     <Table.Tr>
                       <Table.Th>Month</Table.Th><Table.Th ta="right">Occupancy</Table.Th><Table.Th ta="right">Nights</Table.Th>
-                      <Table.Th ta="right">Booking.com</Table.Th><Table.Th ta="right">Direct</Table.Th><Table.Th ta="right">Long term</Table.Th>
+                      <Table.Th ta="right">Booking.com</Table.Th>{airbnb && <Table.Th ta="right">Airbnb</Table.Th>}<Table.Th ta="right">Direct</Table.Th><Table.Th ta="right">Long term</Table.Th>
                       <Table.Th ta="right">Per night</Table.Th>
                     </Table.Tr>
                   </Table.Thead>
@@ -99,6 +101,7 @@ export function StatisticsPage() {
                         <Table.Td ta="right">{m.occupancy}%</Table.Td>
                         <Table.Td ta="right">{m.nightsSold}</Table.Td>
                         <Table.Td ta="right">{money(m.booking)}</Table.Td>
+                        {airbnb && <Table.Td ta="right">{money(m.airbnb)}</Table.Td>}
                         <Table.Td ta="right">{money(m.direct)}</Table.Td>
                         <Table.Td ta="right">{money(m.longTerm)}</Table.Td>
                         <Table.Td ta="right">{m.avgPrice ? money(m.avgPrice) : '–'}</Table.Td>

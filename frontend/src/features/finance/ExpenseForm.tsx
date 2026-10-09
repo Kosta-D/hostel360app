@@ -5,19 +5,30 @@ import type { Expense, ExpenseRequest } from '@/api/generated'
 import { CurrencyPicker, PrimaryHint } from '@/shared/currency'
 import { today } from '@/shared/dates'
 import { primaryCurrency } from '@/shared/format'
+import { useProperties } from '@/shared/properties'
 import { CATEGORY_OPTIONS } from './financeLabels'
 
+const SHARED = 'shared'
+
 export function ExpenseForm({ expense, saving, onSubmit }: { expense?: Expense; saving: boolean; onSubmit: (data: ExpenseRequest) => void }) {
+  const { properties, several } = useProperties()
   const form = useForm<ExpenseRequest>({
     initialValues: expense
-      ? { date: expense.date, category: expense.category, amount: expense.amount, currency: expense.currency, note: expense.note ?? '', repeatMonthly: expense.repeatMonthly }
+      ? { propertyId: expense.propertyId, date: expense.date, category: expense.category, amount: expense.amount, currency: expense.currency, note: expense.note ?? '', repeatMonthly: expense.repeatMonthly }
       : { date: today(), category: 'CLEANING', amount: 0, currency: primaryCurrency(), note: '', repeatMonthly: false },
     validate: { amount: (v) => (v > 0 ? null : 'Enter the amount') },
   })
 
+  // A new expense belongs to the first property until another one (or Shared) is picked.
   return (
-    <form onSubmit={form.onSubmit(onSubmit)}>
+    <form onSubmit={form.onSubmit((v) => onSubmit({ ...v, propertyId: v.propertyId === undefined ? properties[0]?.id : v.propertyId }))}>
       <Stack>
+        {several && (
+          <Select label="Property" allowDeselect={false} description="Shared: a cost for all properties, like the accountant"
+            data={[...properties.map((p) => ({ value: String(p.id), label: p.name })), { value: SHARED, label: 'Shared (all properties)' }]}
+            value={form.values.propertyId === null ? SHARED : String(form.values.propertyId ?? properties[0]?.id)}
+            onChange={(v) => form.setFieldValue('propertyId', v === SHARED ? null : Number(v))} />
+        )}
         <DateInput label="Date" valueFormat="D.M.YYYY" {...form.getInputProps('date')} />
         <Select label="Category" data={CATEGORY_OPTIONS} allowDeselect={false} searchable {...form.getInputProps('category')} />
         <Group grow align="flex-start">

@@ -4,6 +4,8 @@ import { Badge, NavLink, Paper, Table, createTheme, type CSSVariablesResolver, t
 const forest: MantineColorsTuple = ['#eef5f1', '#dde9e2', '#b9d3c5', '#92bba6', '#6fa58a', '#559276', '#3f7c62', '#2f6550', '#24513f', '#183b2d']
 /** Muted ink blue, used only for Booking.com. */
 const ink: MantineColorsTuple = ['#eef2f7', '#dce3ec', '#b6c4d6', '#8ea3bf', '#6d87ab', '#58749e', '#4a6590', '#3d5479', '#324563', '#24324a']
+/** Dusty rose, used only for Airbnb. */
+const rose: MantineColorsTuple = ['#fbf0f1', '#f3dfe1', '#e6bcc1', '#d8979e', '#cc7881', '#c4646e', '#b85661', '#9c4651', '#7f3a43', '#5e2b32']
 /** Warm clay, used only for long-term tenants. */
 const clay: MantineColorsTuple = ['#f8f1ec', '#eedfd4', '#dcbda8', '#c99a79', '#b97d54', '#ae6b3d', '#9a5c31', '#7f4b28', '#663d21', '#4a2c18']
 /** Warm grays: one gray family for text, borders and surfaces. */
@@ -14,7 +16,7 @@ const dark: MantineColorsTuple = ['#d6d3cc', '#b3afa6', '#8f8a80', '#69655c', '#
 export const theme = createTheme({
   primaryColor: 'forest',
   primaryShade: { light: 7, dark: 5 },
-  colors: { forest, ink, clay, gray, dark },
+  colors: { forest, ink, rose, clay, gray, dark },
   defaultRadius: 'sm',
   fontFamily: '"Geist Variable", system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
   headings: { fontWeight: '600' },

@@ -7,19 +7,21 @@ import { COUNTRIES } from '@/shared/countries'
 import { CurrencyPicker, PrimaryHint } from '@/shared/currency'
 import { ISO, addDays, diffDays } from '@/shared/dates'
 import { primaryCurrency } from '@/shared/format'
+import { useProperties } from '@/shared/properties'
 import { PAYMENT, SOURCE, toOptions } from './stayLabels'
 
 /** Values a new stay can start from (e.g. a room and day clicked in the calendar). */
 export interface StayDefaults { roomId?: number; checkIn?: string }
 
 type Values = {
+  propertyId: string | null
   roomId: string | null
   guestId: string | null
   newGuest: boolean
   guestName: string
   guestCountry: string | null
   longTerm: boolean
-  source: 'BOOKING' | 'DIRECT'
+  source: NonNullable<StayRequest['source']>
   dates: [string | null, string | null]
   fromMonth: string | null
   toMonth: string | null
@@ -37,14 +39,14 @@ function initialValues(stay?: Stay, defaults: StayDefaults = {}): Values {
   if (!stay) {
     const checkIn = defaults.checkIn ?? null
     return {
-      roomId: defaults.roomId ? String(defaults.roomId) : null, guestId: null, newGuest: false, guestName: '', guestCountry: null,
+      propertyId: null, roomId: defaults.roomId ? String(defaults.roomId) : null, guestId: null, newGuest: false, guestName: '', guestCountry: null,
       longTerm: false, source: 'BOOKING', dates: [checkIn, checkIn ? addDays(checkIn, 1) : null],
       fromMonth: checkIn ? month(checkIn) : null, toMonth: null, indefinite: false,
       people: 1, amount: '', currency: primaryCurrency(), paymentStatus: 'NOT_PAID', note: '',
     }
   }
   return {
-    roomId: String(stay.room.id), guestId: String(stay.guest.id), newGuest: false, guestName: '', guestCountry: null,
+    propertyId: String(stay.room.propertyId), roomId: String(stay.room.id), guestId: String(stay.guest.id), newGuest: false, guestName: '', guestCountry: null,
     longTerm: stay.longTerm, source: stay.source ?? 'BOOKING', dates: [stay.checkIn, stay.checkOut ?? null],
     fromMonth: month(stay.checkIn), toMonth: stay.checkOut ? month(addDays(stay.checkOut, -1)) : null, indefinite: !stay.checkOut,
     people: stay.people, amount: stay.amount, currency: stay.currency, paymentStatus: stay.paymentStatus, note: stay.note ?? '',
@@ -52,12 +54,12 @@ function initialValues(stay?: Stay, defaults: StayDefaults = {}): Values {
 }
 
 /** Long-term stays cover whole months: from the 1st of the first month to the 1st after the last month. */
-function toRequest(v: Values): StayRequest {
+function toRequest(v: Values, roomId: number): StayRequest {
   const [checkIn, checkOut] = v.longTerm
     ? [v.fromMonth!, v.indefinite || !v.toMonth ? undefined : dayjs(v.toMonth).add(1, 'month').format(ISO)]
     : [v.dates[0]!, v.dates[1]!]
   return {
-    roomId: Number(v.roomId),
+    roomId,
     ...(v.newGuest ? { guestName: v.guestName, guestCountry: v.guestCountry ?? undefined } : { guestId: Number(v.guestId) }),
     people: v.people, longTerm: v.longTerm, source: v.longTerm ? undefined : v.source,
     checkIn, checkOut, amount: Number(v.amount), currency: v.currency, paymentStatus: v.paymentStatus, note: v.note,
@@ -69,11 +71,11 @@ interface Props { stay?: Stay; defaults?: StayDefaults; saving: boolean; onSubmi
 export function StayForm({ stay, defaults, saving, onSubmit }: Props) {
   const { data: rooms = [] } = useListRooms()
   const { data: guests = [] } = useListGuests()
+  const { properties, several } = useProperties()
 
   const form = useForm<Values>({
     initialValues: initialValues(stay, defaults),
     validate: {
-      roomId: (v) => (v ? null : 'Choose a room'),
       guestId: (v, all) => (all.newGuest || v ? null : 'Choose a guest'),
       guestName: (v, all) => (!all.newGuest || v.trim() ? null : 'Type the guest name'),
       dates: (v, all) => (all.longTerm || (v[0] && v[1]) ? null : 'Pick arrival and departure'),
@@ -83,23 +85,41 @@ export function StayForm({ stay, defaults, saving, onSubmit }: Props) {
     },
   })
   const v = form.values
-  const room = rooms.find((r) => String(r.id) === v.roomId)
+  // The property comes from the picked room, else the first one; an apartment books its single hidden unit.
+  const propertyId = v.propertyId ?? String(rooms.find((r) => String(r.id) === v.roomId)?.propertyId ?? properties[0]?.id ?? '')
+  const property = properties.find((p) => String(p.id) === propertyId)
+  const roomId = property?.unitId != null ? String(property.unitId) : v.roomId
+  const room = rooms.find((r) => String(r.id) === roomId)
+  const hostelRooms = rooms.filter((r) => String(r.propertyId) === propertyId && !r.apartment)
   const nights = v.dates[0] && v.dates[1] ? diffDays(v.dates[0], v.dates[1]) : 0
   const pickRoom = (id: string | null) => {
     const r = rooms.find((x) => String(x.id) === id)
-    form.setValues({ roomId: id, ...(r && !stay ? { longTerm: r.longTerm } : {}), ...(r && v.people > r.capacity ? { people: r.capacity } : {}) })
+    form.setValues({ propertyId, roomId: id, ...(r && !stay ? { longTerm: r.longTerm } : {}), ...(r && v.people > r.capacity ? { people: r.capacity } : {}) })
   }
 
   return (
-    <form onSubmit={form.onSubmit((values) => onSubmit(toRequest(values)))}>
+    <form onSubmit={form.onSubmit((values) => (roomId ? onSubmit(toRequest(values, Number(roomId))) : form.setFieldError('roomId', 'Choose a room')))}>
       <Stack>
+        {several && (
+          <Select label="Property" allowDeselect={false} data={properties.map((p) => ({ value: String(p.id), label: p.name }))}
+            value={propertyId} onChange={(id) => form.setValues({ propertyId: id, roomId: null })} />
+        )}
         <Group align="flex-start" wrap="nowrap">
-          <Select label="Room" searchable style={{ flex: 1 }} data={rooms.map((r) => ({ value: String(r.id), label: `${r.number} · ${r.name}` }))}
-            {...form.getInputProps('roomId')} onChange={pickRoom} />
-          <Input.Wrapper label="People">
-            <SegmentedControl fullWidth size="md" value={String(v.people)} onChange={(x) => form.setFieldValue('people', Number(x))}
-              data={[{ value: '1', label: '1' }, { value: '2', label: '2', disabled: room?.capacity === 1 }]} />
-          </Input.Wrapper>
+          {property?.type === 'APARTMENT' ? (
+            <Text size="sm" c="dimmed" style={{ flex: 1, alignSelf: 'flex-end' }} pb={8}>Whole apartment, up to {property.guests} guests</Text>
+          ) : (
+            <Select label="Room" searchable style={{ flex: 1 }} data={hostelRooms.map((r) => ({ value: String(r.id), label: `${r.number} · ${r.name}` }))}
+              {...form.getInputProps('roomId')} onChange={pickRoom} />
+          )}
+          {(room?.capacity ?? 2) <= 2 ? (
+            <Input.Wrapper label="People">
+              <SegmentedControl fullWidth size="md" value={String(v.people)} onChange={(x) => form.setFieldValue('people', Number(x))}
+                data={[{ value: '1', label: '1' }, { value: '2', label: '2', disabled: room?.capacity === 1 }]} />
+            </Input.Wrapper>
+          ) : (
+            <NumberInput label="People" w={90} min={1} max={room?.capacity} allowDecimal={false}
+              value={v.people} onChange={(x) => form.setFieldValue('people', Number(x) || 1)} />
+          )}
         </Group>
 
         {v.newGuest ? (

@@ -1,13 +1,15 @@
 package com.hostel360.stay;
 
 import com.hostel360.common.BusinessException;
+import com.hostel360.common.NotFoundException;
 import com.hostel360.guest.Guest;
 import com.hostel360.guest.GuestRepository;
+import com.hostel360.property.Property;
+import com.hostel360.property.PropertyRepository;
 import com.hostel360.room.Room;
 import com.hostel360.room.RoomRepository;
 import com.hostel360.room.RoomStatus;
 import com.hostel360.settings.CurrencyService;
-import com.hostel360.settings.SettingsRepository;
 import com.hostel360.stay.BookingExportReader.Reservation;
 import com.hostel360.stay.StayEnums.PaymentStatus;
 import com.hostel360.stay.StayEnums.StaySource;
@@ -26,7 +28,7 @@ import java.util.*;
 
 /**
  * Turns a Booking.com reservations export into stays. Only confirmed ("ok") reservations are imported;
- * rooms are picked by their Booking.com room type, and reservations already in the app are skipped.
+ * rooms are picked by their Booking.com room type (an apartment takes every reservation), and reservations already in the app are skipped.
  * Past stays come in checked out, stays in progress checked in (both paid), and future ones booked.
  */
 @Service
@@ -38,7 +40,7 @@ public class BookingImportService {
     private final StayRepository stays;
     private final RoomRepository rooms;
     private final GuestRepository guests;
-    private final SettingsRepository settings;
+    private final PropertyRepository properties;
     private final CurrencyService currencies;
 
     @Schema(name = "BookingImportResult")
@@ -46,9 +48,10 @@ public class BookingImportService {
                          @Schema(description = "Stays ended early because the next guest got the room") List<String> shortened,
                          @Schema(description = "Reservations that could not be imported") List<String> problems) {}
 
-    public Result importExport(InputStream file) {
+    public Result importExport(InputStream file, Long propertyId) {
+        var property = properties.findById(propertyId).orElseThrow(() -> new NotFoundException("Property", propertyId));
         var reservations = BookingExportReader.read(file);
-        var run = new Run(settings.bookingCommission(), LocalDate.now());
+        var run = new Run(property, LocalDate.now());
         reservations.stream()
                 .sorted(Comparator.comparing(Reservation::checkIn).thenComparing(Reservation::line))
                 .forEach(run::add);
@@ -56,13 +59,13 @@ public class BookingImportService {
     }
 
     private final class Run {
-        final BigDecimal commission;
+        final Property property;
         final LocalDate today;
         int imported, alreadyInApp, notImported;
         final List<String> shortened = new ArrayList<>(), problems = new ArrayList<>();
 
-        Run(BigDecimal commission, LocalDate today) {
-            this.commission = commission;
+        Run(Property property, LocalDate today) {
+            this.property = property;
             this.today = today;
         }
 
@@ -93,14 +96,15 @@ public class BookingImportService {
                     alreadyInApp++;
                     continue;
                 }
-                var candidates = rooms.findByBookingTypeIgnoreCaseOrderByNumberAsc(type);
+                var candidates = property.isApartment() ? rooms.findByPropertyIdOrderByNumberAsc(property.getId())
+                        : rooms.findByPropertyIdAndBookingTypeIgnoreCaseOrderByNumberAsc(property.getId(), type);
                 if (candidates.isEmpty()) {
-                    problems.add(label + "no room is set to the Booking.com type \"" + type + "\".");
+                    problems.add(label + "no room in " + property.getName() + " is set to the Booking.com type \"" + type + "\".");
                     continue;
                 }
                 var room = pickRoom(candidates, r);
                 if (room == null) {
-                    problems.add(label + "all " + type + " rooms are taken on those dates.");
+                    problems.add(label + (property.isApartment() ? property.getName() + " is" : "all " + type + " rooms are") + " taken on those dates.");
                     continue;
                 }
                 int people = Math.max(1, Math.min(room.getCapacity(), peopleLeft - (units - 1 - i)));
@@ -131,7 +135,7 @@ public class BookingImportService {
                 var overlaps = stays.findUsingRoom(room.getId(), from, to);
                 if (overlaps.stream().allMatch(s -> s.getSource() == StaySource.BOOKING && !s.isLongTerm() && s.getCheckIn().isBefore(from))) {
                     for (var s : overlaps) {
-                        shortened.add(s.getGuest().getName() + " in room " + room.getNumber() + " now leaves " + DATE.format(from)
+                        shortened.add(s.getGuest().getName() + " in " + (room.isApartment() ? room.getName() : "room " + room.getNumber()) + " now leaves " + DATE.format(from)
                                 + " instead of " + DATE.format(s.getCheckOut()) + ", when " + r.guestName() + " arrived.");
                         s.setCheckOut(from);
                     }
@@ -151,7 +155,7 @@ public class BookingImportService {
             stay.setPeople(people);
             stay.setLongTerm(false);
             stay.setSource(StaySource.BOOKING);
-            stay.setCommissionPct(commission);
+            stay.setCommissionPct(property.getBookingCommission());
             stay.setCheckIn(r.checkIn());
             stay.setCheckOut(r.checkOut());
             stay.setAmount(amount);

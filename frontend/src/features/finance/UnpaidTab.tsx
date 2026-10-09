@@ -4,6 +4,7 @@ import { useListUnpaid, useMarkPaid, useSetRentPaid, type UnpaidItem } from '@/a
 import { fmtDate, fmtMonth } from '@/shared/dates'
 import { money } from '@/shared/format'
 import { notify } from '@/shared/notify'
+import { unitName } from '@/shared/properties'
 import { useFinanceRefresh } from './useFinanceRefresh'
 
 /** Who still owes money: short stays not fully paid, and each unpaid month of long-term rent. */
@@ -29,7 +30,7 @@ export function UnpaidTab() {
               <div style={{ minWidth: 0 }}>
                 <Text fw={600} truncate>{i.guestName}</Text>
                 <Text size="sm" c="dimmed">
-                  Room {i.roomNumber} · {i.month ? `Rent for ${fmtMonth(i.month)}` : `${fmtDate(i.checkIn)} → ${i.checkOut ? fmtDate(i.checkOut) : ''}`}
+                  {unitName({ number: i.roomNumber, name: i.roomName, apartment: i.apartment })} · {i.month ? `Rent for ${fmtMonth(i.month)}` : `${fmtDate(i.checkIn)} → ${i.checkOut ? fmtDate(i.checkOut) : ''}`}
                 </Text>
                 <Group gap={6} mt={4}>
                   <Text size="sm" fw={500}>{money(i.amount, i.currency)}</Text>

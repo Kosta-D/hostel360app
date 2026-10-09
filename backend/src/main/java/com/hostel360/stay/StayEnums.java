@@ -4,7 +4,7 @@ public final class StayEnums {
     private StayEnums() {}
 
     /** Where a short-term booking came from. */
-    public enum StaySource { BOOKING, DIRECT }
+    public enum StaySource { BOOKING, AIRBNB, DIRECT }
 
     public enum StayStatus { BOOKED, CHECKED_IN, CHECKED_OUT, CANCELLED }
 

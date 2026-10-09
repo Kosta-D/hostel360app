@@ -1,14 +1,15 @@
-import { Button, Group, Input, NumberInput, SegmentedControl, Select, Stack, Switch, TextInput } from '@mantine/core'
+import { Button, Group, NumberInput, Select, Stack, Switch, TextInput } from '@mantine/core'
 import { useForm } from '@mantine/form'
-import type { Room, RoomRequest } from '@/api/generated'
+import type { Property, Room, RoomRequest } from '@/api/generated'
 import { ROOM_STATUS_OPTIONS } from './roomStatus'
 
-const EMPTY: RoomRequest = { number: 0, name: '', floor: 1, capacity: 1, longTerm: false, status: 'AVAILABLE', bookingType: '' }
-const ONE_OR_TWO = ['1', '2']
+interface Props { room?: Room; hostels: Property[]; hostelId: number; saving: boolean; onSubmit: (data: RoomRequest) => void }
 
-export function RoomForm({ room, saving, onSubmit }: { room?: Room; saving: boolean; onSubmit: (data: RoomRequest) => void }) {
+export function RoomForm({ room, hostels, hostelId, saving, onSubmit }: Props) {
   const form = useForm<RoomRequest>({
-    initialValues: room ? { ...room, bookingType: room.bookingType ?? '' } : EMPTY,
+    initialValues: room
+      ? { ...room, floor: room.floor ?? 1, bookingType: room.bookingType ?? '' }
+      : { propertyId: hostelId, number: 0, name: '', floor: 1, capacity: 1, longTerm: false, status: 'AVAILABLE', bookingType: '' },
     validate: {
       number: (v) => (v >= 1 && v <= 999 ? null : 'Enter a room number'),
       name: (v) => (v.trim() ? null : 'Required'),
@@ -18,17 +19,17 @@ export function RoomForm({ room, saving, onSubmit }: { room?: Room; saving: bool
   return (
     <form onSubmit={form.onSubmit(onSubmit)}>
       <Stack>
+        {hostels.length > 1 && (
+          <Select label="Hostel" allowDeselect={false} data={hostels.map((p) => ({ value: String(p.id), label: p.name }))}
+            value={String(form.values.propertyId)} onChange={(v) => form.setFieldValue('propertyId', Number(v))} />
+        )}
         <Group grow align="flex-start">
           <NumberInput label="Room number" min={1} max={999} allowDecimal={false} data-autofocus {...form.getInputProps('number')} />
           <TextInput label="Room name" placeholder="e.g. MiniSingle" {...form.getInputProps('name')} />
         </Group>
-        <Group grow>
-          <Input.Wrapper label="Floor">
-            <SegmentedControl fullWidth data={ONE_OR_TWO} value={String(form.values.floor)} onChange={(v) => form.setFieldValue('floor', Number(v))} />
-          </Input.Wrapper>
-          <Input.Wrapper label="Capacity (persons)">
-            <SegmentedControl fullWidth data={ONE_OR_TWO} value={String(form.values.capacity)} onChange={(v) => form.setFieldValue('capacity', Number(v))} />
-          </Input.Wrapper>
+        <Group grow align="flex-start">
+          <NumberInput label="Floor" min={-5} max={200} allowDecimal={false} {...form.getInputProps('floor')} />
+          <NumberInput label="Capacity (persons)" min={1} max={10} allowDecimal={false} {...form.getInputProps('capacity')} />
         </Group>
         <Select label="Status" data={ROOM_STATUS_OPTIONS} allowDeselect={false} {...form.getInputProps('status')} />
         <Switch label="Long-term rental" description="Rented monthly rather than per night" {...form.getInputProps('longTerm', { type: 'checkbox' })} />

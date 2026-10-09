@@ -11,6 +11,7 @@ public final class ExpenseDto {
 
     @Schema(name = "ExpenseRequest")
     public record Request(
+            @Schema(nullable = true, description = "Empty for an expense shared by all properties") Long propertyId,
             @NotNull LocalDate date,
             @NotNull ExpenseCategory category,
             @NotNull @DecimalMin("0") BigDecimal amount,
@@ -19,12 +20,14 @@ public final class ExpenseDto {
             @NotNull Boolean repeatMonthly) {}
 
     @Schema(name = "Expense")
-    public record Response(Long id, LocalDate date, ExpenseCategory category, BigDecimal amount, String currency,
+    public record Response(Long id, @Schema(nullable = true, description = "Empty when shared") Long propertyId,
+                           @Schema(nullable = true) String propertyName, LocalDate date, ExpenseCategory category, BigDecimal amount, String currency,
                            @Schema(description = "Units of the currency per 1 primary currency when saved") BigDecimal rate, BigDecimal amountPrimary, @Schema(nullable = true) String note,
                            boolean repeatMonthly,
                            @Schema(nullable = true, description = "First day of the last month a repeating expense counts in") LocalDate repeatUntil) {
         static Response from(Expense e) {
-            return new Response(e.getId(), e.getDate(), e.getCategory(), e.getAmount(), e.getCurrency(), e.getRate(),
+            var p = e.getProperty();
+            return new Response(e.getId(), p != null ? p.getId() : null, p != null ? p.getName() : null, e.getDate(), e.getCategory(), e.getAmount(), e.getCurrency(), e.getRate(),
                     e.amountPrimary(), e.getNote(), e.isRepeatMonthly(), e.getRepeatUntil());
         }
     }

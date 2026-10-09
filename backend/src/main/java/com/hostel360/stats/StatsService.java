@@ -59,11 +59,12 @@ public class StatsService {
                 acc.months.add(new RoomMonth(pct(Math.min(days, o.shortNights() + o.longNights()), days), o.longNights() > 0));
             }
             var arrived = arrivals(stays, from, to);
-            BigDecimal booking = sum(arrived, s -> s.getSource() == StaySource.BOOKING), direct = sum(arrived, s -> s.getSource() != StaySource.BOOKING);
+            BigDecimal booking = sum(arrived, s -> s.getSource() == StaySource.BOOKING), airbnb = sum(arrived, s -> s.getSource() == StaySource.AIRBNB),
+                    direct = sum(arrived, s -> s.getSource() == StaySource.DIRECT);
             var rent = stays.stream().filter(Stay::isLongTerm).filter(s -> s.rentMonths(ym).anyMatch(ym::equals))
                     .map(Stay::amountPrimary).reduce(BigDecimal.ZERO, BigDecimal::add);
-            months.add(new Month(from, pct(sold, available), sold, available, booking, direct, rent,
-                    ratio(booking.add(direct), totalNights(arrived))));
+            months.add(new Month(from, pct(sold, available), sold, available, booking, airbnb, direct, rent,
+                    ratio(booking.add(airbnb).add(direct), totalNights(arrived))));
         }
 
         LocalDate yearFrom = LocalDate.of(year, 1, 1), yearTo = yearFrom.plusYears(1);
@@ -76,7 +77,7 @@ public class StatsService {
             var shortIncome = sum(own, s -> true);
             var rent = longInYear.stream().filter(s -> s.getRoom().getId().equals(room.getId()))
                     .map(s -> rentInYear(s, year)).reduce(BigDecimal.ZERO, BigDecimal::add);
-            return new StatsDto.Room(room.getId(), room.getNumber(), room.getName(), acc.sold, pct(acc.sold, acc.available),
+            return new StatsDto.Room(room.getId(), room.getNumber(), room.getName(), room.isApartment(), acc.sold, pct(acc.sold, acc.available),
                     shortIncome.add(rent), ratio(shortIncome, totalNights(own)), acc.months);
         }).toList();
 
